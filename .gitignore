@@ -1,0 +1,6 @@
+# 第 6 課實驗用的工作目錄(內含自己的 .git),由 publish.sh 從 repo-template 產生
+labs/06-gitops/repo/
+
+*.swp
+*~
+.DS_Store

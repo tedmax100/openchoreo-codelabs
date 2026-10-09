@@ -1,0 +1,39 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: ledger
+  namespace: default
+spec:
+  owner:
+    projectName: default
+  autoDeploy: true
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/internal-service
+  parameters:
+    team: payments
+  traits:
+    - kind: ClusterTrait
+      name: pod-disruption-budget
+      instanceName: pdb
+      parameters:
+        minAvailable: 1
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: ledger-workload
+  namespace: default
+spec:
+  owner:
+    componentName: ledger
+    projectName: default
+  endpoints:
+    http:
+      type: HTTP
+      port: 9090
+      visibility: [project]
+  container:
+    image: "ghcr.io/openchoreo/samples/greeter-service:latest"
+    command: ["./go-greeter"]
+    args: ["--port", "9090"]

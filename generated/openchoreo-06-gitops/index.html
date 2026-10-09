@@ -1,0 +1,381 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 06:GitOps</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-06-gitops"
+                  title="OpenChoreo 實戰 06:GitOps"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <p>前幾課我們都用 <code>kubectl apply</code> 手動部署。這一課把「期望狀態」放進 Git,讓 Argo CD 持續把叢集調和成 Git 的樣子。</p>
+<h2 is-upgraded>為什麼 OpenChoreo 很適合 GitOps?</h2>
+<p>OpenChoreo 的所有資源(Project、Component、Workload...)都是 Kubernetes CRD,所以任何 GitOps 工具都能直接同步它們,不需要特別的整合。</p>
+<h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成第 1 到 3 課</li>
+<li>叢集已安裝 Argo CD(<code>argocd</code> namespace)。第 1 課的 k3d 環境若沒有,請參考 <a href="https://argo-cd.readthedocs.io/en/stable/getting_started/" target="_blank">Argo CD 安裝文件</a></li>
+<li>本機有 <code>git</code></li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>在叢集內架一個簡易 Git 伺服器</li>
+<li>建立 Argo CD Application 指向 Git repo</li>
+<li>修改 Git → 自動部署</li>
+<li>手動改叢集 → 被 selfHeal 還原</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:GitOps 是什麼?" duration="8">
+        <h2 is-upgraded>從「手動部署」說起</h2>
+<p>到目前為止,我們都是自己在終端機執行 <code>kubectl apply</code>。這在實驗時很方便,但在團隊裡會遇到問題:</p>
+<ul>
+<li>誰在什麼時候改了什麼?不知道</li>
+<li>有人偷偷 <code>kubectl edit</code> 了線上環境,和文件不一致(<strong>設定漂移</strong>,configuration drift)</li>
+<li>壞掉了想回到昨天的狀態?要靠記憶</li>
+<li>部署權限要發給每一個人的電腦</li>
+</ul>
+<h2 is-upgraded>GitOps 的四個原則</h2>
+<p>GitOps(OpenGitOps 社群定義的原則)主張:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>原則</p>
+</td><td colspan="1" rowspan="1"><p>意思</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>宣告式</strong></p>
+</td><td colspan="1" rowspan="1"><p>系統的期望狀態用宣告方式描述</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>版本化且不可變</strong></p>
+</td><td colspan="1" rowspan="1"><p>期望狀態存在 Git,有完整歷史,不能偷改</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>自動拉取</strong></p>
+</td><td colspan="1" rowspan="1"><p>軟體代理人自動從 Git 取得最新期望狀態</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>持續調和</strong></p>
+</td><td colspan="1" rowspan="1"><p>代理人持續比對實際與期望,發現差異就修正</p>
+</td></tr>
+</table>
+<p>一句話:<strong>Git 是唯一的真實來源(single source of truth)</strong>,叢集只是 Git 的反映。</p>
+<h2 is-upgraded>推送式 vs 拉取式部署</h2>
+<table>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>推送式(傳統 CI/CD)</p>
+</td><td colspan="1" rowspan="1"><p>拉取式(GitOps)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>誰動手</p>
+</td><td colspan="1" rowspan="1"><p>CI 系統執行 <code>kubectl apply</code></p>
+</td><td colspan="1" rowspan="1"><p>叢集內的代理人自己去 Git 拉</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>叢集憑證</p>
+</td><td colspan="1" rowspan="1"><p>必須交給 CI 系統</p>
+</td><td colspan="1" rowspan="1"><p>留在叢集內,不外流</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>發現漂移</p>
+</td><td colspan="1" rowspan="1"><p>通常不會</p>
+</td><td colspan="1" rowspan="1"><p>持續比對,自動發現</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>回滾</p>
+</td><td colspan="1" rowspan="1"><p>重跑舊的流水線</p>
+</td><td colspan="1" rowspan="1"><p><code>git revert</code>,代理人自動套用</p>
+</td></tr>
+</table>
+<h2 is-upgraded>Argo CD 的核心名詞</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>名詞</p>
+</td><td colspan="1" rowspan="1"><p>說明</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Application</strong></p>
+</td><td colspan="1" rowspan="1"><p>一個「Git 的某個目錄 → 叢集的某個 namespace」的對應關係</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Sync(同步)</strong></p>
+</td><td colspan="1" rowspan="1"><p>把叢集調整成 Git 的樣子</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Synced / OutOfSync</strong></p>
+</td><td colspan="1" rowspan="1"><p>叢集和 Git 一致 / 不一致</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Health</strong></p>
+</td><td colspan="1" rowspan="1"><p>資源本身是否健康(例如 Deployment 是否就緒)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>selfHeal</strong></p>
+</td><td colspan="1" rowspan="1"><p>叢集被手動改了,自動還原</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>prune</strong></p>
+</td><td colspan="1" rowspan="1"><p>Git 裡刪掉的檔案,叢集裡的資源也刪掉</p>
+</td></tr>
+</table>
+<p>注意 <strong>Sync 與 Health 是兩件事</strong>:Synced 只代表「和 Git 一致」,不代表應用正常運作。</p>
+<h2 is-upgraded>兩層調和迴圈</h2>
+<p>這一課很有趣,因為有<strong>兩個</strong>調和迴圈疊在一起:</p>
+<pre><code>Git ──(Argo CD 調和)──▶ 叢集裡的 Component/Workload ──(OpenChoreo 控制器調和)──▶ Deployment/Service ...
+</code></pre>
+<ul>
+<li>Argo CD 負責「Git → OpenChoreo 資源」</li>
+<li>OpenChoreo 控制器負責「OpenChoreo 資源 → Kubernetes 資源」</li>
+</ul>
+<p>兩者都是第 2 課說的「宣告期望狀態、持續調和」,所以能無縫銜接。</p>
+<h2 is-upgraded>為什麼 ReleaseBinding 不好放進 Git?</h2>
+<p>ReleaseBinding 的 <code>releaseName</code> 帶有內容雜湊(如 <code>hello-gitops-65f6b7d6b6</code>),是控制器<strong>在 Git 之外</strong>產生的,你無法事先寫在檔案裡。完整的 GitOps 流程需要工具先把這類檔案產生出來再提交,這也是 OpenChoreo 提供 <code>occ releasebinding generate</code> 的原因。本課聚焦在 Component 與 Workload。</p>
+<p>準備好實驗檔案吧。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="準備實驗檔案" duration="3">
+        <p>本課的檔案放在 <code>codelabs/labs/06-gitops/</code>:</p>
+<pre><code>06-gitops/
+├── git-server.yaml     # 叢集內的 Git 伺服器
+├── publish.sh          # 把 ./repo 推到 Git 伺服器
+├── application.yaml    # Argo CD Application
+├── repo-template/apps/hello-gitops/   # 範本
+│   ├── component.yaml
+│   └── workload.yaml
+└── repo/                              # 第一次執行 publish.sh 時由範本複製,並初始化為 git repo
+</code></pre>
+<h2 is-upgraded>Git 裡放什麼?</h2>
+<p><code>repo/apps/hello-gitops/component.yaml</code>:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: hello-gitops
+  namespace: default
+spec:
+  owner:
+    projectName: default
+  autoDeploy: true
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service
+</code></pre>
+<p><code>repo/apps/hello-gitops/workload.yaml</code>:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: hello-gitops-workload
+  namespace: default
+spec:
+  owner:
+    componentName: hello-gitops
+    projectName: default
+  endpoints:
+    http:
+      type: HTTP
+      port: 9090
+      visibility: [external]
+  container:
+    image: &#34;ghcr.io/openchoreo/samples/greeter-service:latest&#34;
+    command:
+      - ./go-greeter
+    args:
+      - --port
+      - &#34;9090&#34;
+    env:
+      - key: LOG_LEVEL
+        value: &#34;info&#34;
+</code></pre>
+<p>這和第 3 課的 YAML 幾乎一樣,差別只是它現在住在 Git 裡。</p>
+<p>Positive : 為什麼不把 ReleaseBinding 也放進 Git?因為 ReleaseBinding 的 <code>releaseName</code> 是控制器依內容雜湊產生的(例如 <code>hello-gitops-65f6b7d6b6</code>),事先寫不出來。OpenChoreo 另外提供 <code>occ releasebinding generate</code> 來產生這類檔案,適合搭配完整的 GitOps 目錄結構,本課不涵蓋。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="架設 Git 伺服器" duration="5">
+        <p>為了讓實驗不依賴外部服務,我們在叢集內用 nginx + <code>git-http-backend</code> 架一個簡易 Git 伺服器(<code>git-server.yaml</code>)。核心是它的啟動腳本:</p>
+<pre><code language="language-bash" class="language-bash">apk add --no-cache git git-daemon fcgiwrap spawn-fcgi
+test -x /usr/libexec/git-core/git-http-backend
+</code></pre>
+<p>Negative : <strong>注意套件名稱。 </strong><code>git-daemon</code> 這個套件很關鍵:新版 Alpine 把 <code>git-http-backend</code> 拆到 <code>git-daemon</code>,只裝 <code>git</code> 的話 nginx 會對所有請求回 <code>403 Forbidden</code>,Argo CD 就會報 <code>failed to list refs: authorization failed: 403 Forbidden</code>。我們的啟動腳本用 <code>test -x</code> 在缺少時直接讓 Pod 失敗,比靜默出錯更容易發現。</p>
+<p>另一個陷阱:這個伺服器用 <code>emptyDir</code> 存放 repo,<strong>Pod 一重建 repo 就消失</strong>,Argo CD 會報同樣的 403。僅供實驗,不要用於正式環境。</p>
+<p>套用:</p>
+<pre><code language="language-bash" class="language-bash">cd codelabs/labs/06-gitops
+kubectl apply -f git-server.yaml
+kubectl wait --for=condition=Available deploy/git-server -n codelab-git --timeout=180s
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="發佈 repo 並建立 Application" duration="5">
+        <p><code>publish.sh</code> 會初始化 <code>./repo</code> 為 Git repo、commit,再打包成 bare repo 複製進 Git 伺服器:</p>
+<pre><code language="language-bash" class="language-bash">./publish.sh &#34;add hello-gitops&#34;
+</code></pre>
+<p>查看 <code>application.yaml</code>:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hello-gitops
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://git-server.codelab-git.svc.cluster.local/codelab-gitops.git
+    targetRevision: main
+    path: apps/hello-gitops
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+</code></pre>
+<table>
+<tr><td colspan="1" rowspan="1"><p>欄位</p>
+</td><td colspan="1" rowspan="1"><p>意義</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>source.repoURL / path</code></p>
+</td><td colspan="1" rowspan="1"><p>從哪個 repo、哪個目錄讀取期望狀態</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>destination.namespace</code></p>
+</td><td colspan="1" rowspan="1"><p>套用到哪個 namespace</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>automated</code></p>
+</td><td colspan="1" rowspan="1"><p>偵測到差異就自動同步,不用手動按 Sync</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>prune: true</code></p>
+</td><td colspan="1" rowspan="1"><p>Git 裡刪掉的資源,叢集也刪</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>selfHeal: true</code></p>
+</td><td colspan="1" rowspan="1"><p>叢集被手動改動時,自動還原成 Git 的樣子</p>
+</td></tr>
+</table>
+<p>套用並觀察:</p>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f application.yaml
+sleep 30
+kubectl get application hello-gitops -n argocd
+kubectl get component,workload -n default | grep hello
+</code></pre>
+<p>預期 <code>Synced</code> 與 <code>Healthy</code>,並看到由 Git 建立的 Component 和 Workload。</p>
+<p>Positive : 你沒有執行任何 <code>kubectl apply</code> 去建立 Component。它是 Argo CD 從 Git 讀出來、套用到叢集的。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="改 Git,觸發部署" duration="5">
+        <p>先記下目前的 Release:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get component hello-gitops -n default -o jsonpath=&#39;{.status.latestRelease.name}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>把 <code>LOG_LEVEL</code> 改成 <code>debug</code>,commit 並發佈:</p>
+<pre><code language="language-bash" class="language-bash">sed -i &#39;s/value: &#34;info&#34;/value: &#34;debug&#34;/&#39; repo/apps/hello-gitops/workload.yaml
+./publish.sh &#34;set LOG_LEVEL=debug&#34;
+</code></pre>
+<p>Argo CD 預設每 3 分鐘輪詢一次 Git。為了不等,手動要求重新整理:</p>
+<pre><code language="language-bash" class="language-bash">kubectl annotate application hello-gitops -n argocd argocd.argoproj.io/refresh=hard --overwrite
+sleep 20
+kubectl get workload hello-gitops-workload -n default -o jsonpath=&#39;{.spec.container.env}{&#34;\n&#34;}&#39;
+kubectl get component hello-gitops -n default -o jsonpath=&#39;{.status.latestRelease.name}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>預期 <code>LOG_LEVEL</code> 變成 <code>debug</code>,而且 <code>latestRelease</code> 變成新的名稱:Git 的變更 → Workload 更新 → OpenChoreo 產生新的 ComponentRelease → 自動部署到 development。</p>
+<p>Positive : 整條鏈是 <strong>Git commit → Argo CD → OpenChoreo 控制器 → Release → Data Plane</strong>。你只做了最前面的一步。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="漂移與 selfHeal" duration="4">
+        <p>模擬有人直接動叢集(俗稱 configuration drift):</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch workload hello-gitops-workload -n default --type json \
+  -p &#39;[{&#34;op&#34;:&#34;replace&#34;,&#34;path&#34;:&#34;/spec/container/env/0/value&#34;,&#34;value&#34;:&#34;error&#34;}]&#39;
+kubectl get workload hello-gitops-workload -n default -o jsonpath=&#39;{.spec.container.env[0].value}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>這時會看到 <code>error</code>。等 20 秒再看:</p>
+<pre><code language="language-bash" class="language-bash">sleep 20
+kubectl get workload hello-gitops-workload -n default -o jsonpath=&#39;{.spec.container.env[0].value}{&#34;\n&#34;}&#39;
+kubectl get application hello-gitops -n argocd
+</code></pre>
+<p>預期值被還原成 <code>debug</code>(Git 裡的值),Application 仍是 <code>Synced</code>。</p>
+<p>Positive : 這就是 GitOps 的好處:<strong>Git 是唯一的真實來源</strong>。任何未經 Git 的手動修改都會被撤銷,也留下了完整、可審計、可回溯的變更歷史。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="刪除與 prune" duration="3">
+        <p><code>prune: true</code> 的意思是:從 Git 刪掉檔案,Argo CD 會把對應資源從叢集刪掉。</p>
+<pre><code language="language-bash" class="language-bash">git -C repo rm -r apps/hello-gitops
+./publish.sh &#34;remove hello-gitops&#34;
+kubectl annotate application hello-gitops -n argocd argocd.argoproj.io/refresh=hard --overwrite
+sleep 20
+kubectl get component,workload -n default | grep hello || echo &#34;pruned&#34;
+</code></pre>
+<p>Negative : 這一段是依 Argo CD 的 <code>prune</code> 語意撰寫,作者實測環境中沒有執行這個步驟。如果你的結果不同,請檢查 Application 的 <code>syncPolicy.automated.prune</code>,以及 Argo CD 是否因為「刪除所有資源」而停止自動 prune。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="清理" duration="2">
+        <p>先刪 Application,否則 selfHeal 會把資源重建:</p>
+<pre><code language="language-bash" class="language-bash">kubectl delete application hello-gitops -n argocd
+kubectl delete component hello-gitops -n default --ignore-not-found
+kubectl delete namespace codelab-git
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li>GitOps 的「拉取式」相比「推送式」有什麼好處?</li>
+<li><code>selfHeal</code> 與 <code>prune</code> 分別做什麼?</li>
+<li>Synced 且 Healthy 就代表應用一定正常嗎?</li>
+<li>本課為什麼不把 ReleaseBinding 放進 Git?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>叢集憑證不必交給外部 CI;代理人持續比對能發現漂移;回滾可用 <code>git revert</code>。</li>
+<li>selfHeal:叢集被手動修改時自動還原成 Git 的狀態。prune:Git 中刪除的檔案,叢集裡對應資源也刪除。</li>
+<li>不一定。Synced 只代表與 Git 一致,Health 是資源本身狀態,兩者是不同的事。</li>
+<li>它的 <code>releaseName</code> 含內容雜湊,由控制器在 Git 之外產生,無法事先寫入檔案。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="恭喜與下一步" duration="1">
+        <p>你已經:</p>
+<ul>
+<li>✅ 把 OpenChoreo 資源放進 Git,由 Argo CD 同步</li>
+<li>✅ 體驗了「改 Git 就部署」</li>
+<li>✅ 驗證了 selfHeal 會還原手動漂移</li>
+<li>✅ 認識了自架 Git 伺服器的兩個陷阱</li>
+</ul>
+<h2 is-upgraded>延伸閱讀</h2>
+<ul>
+<li><a href="https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/" target="_blank">Argo CD Automated Sync Policy</a></li>
+<li><a href="https://openchoreo.dev/docs/" target="_blank">OpenChoreo 文件</a></li>
+</ul>
+<h2 is-upgraded>下一課</h2>
+<p><strong>07:可觀測性</strong> — 啟用 Observability Plane,查看日誌、指標與追蹤。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2026-10-09T22:57:46+08:00",
+  "id": "openchoreo-03-first-component",
+  "duration": 41,
+  "title": "OpenChoreo 實戰 03:部署你的第一個 Component",
+  "summary": "安裝 occ CLI,撰寫 Component 與 Workload YAML,部署預建映像並追蹤 Release、ReleaseBinding 與路由",
+  "source": "tutorials/03-first-component.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "openchoreo",
+    "kubernetes",
+    "deployment"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://github.com/openchoreo/openchoreo/issues",
+  "url": "openchoreo-03-first-component"
+}

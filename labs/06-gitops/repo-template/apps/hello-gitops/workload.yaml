@@ -1,0 +1,24 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: hello-gitops-workload
+  namespace: default
+spec:
+  owner:
+    componentName: hello-gitops
+    projectName: default
+  endpoints:
+    http:
+      type: HTTP
+      port: 9090
+      visibility: [external]
+  container:
+    image: "ghcr.io/openchoreo/samples/greeter-service:latest"
+    command:
+      - ./go-greeter
+    args:
+      - --port
+      - "9090"
+    env:
+      - key: LOG_LEVEL
+        value: "info"

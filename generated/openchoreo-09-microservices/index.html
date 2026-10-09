@@ -1,0 +1,474 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 09:微服務實戰</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-09-microservices"
+                  title="OpenChoreo 實戰 09:微服務實戰"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <p>前面的服務都是「單打獨鬥」。真實系統由許多服務互相呼叫,還有資料庫、快取。這一課部署 Google 的 <strong>Online Boutique</strong> 微服務範例:一個線上商店,由 10 個應用服務加上 1 個 Redis(Valkey)快取組成,服務之間用 gRPC 溝通。</p>
+<h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成第 1 到 3 課</li>
+<li>資源:建議 <strong>8 GB RAM 以上</strong>,磁碟至少 <strong>5 GB</strong> 可用</li>
+<li>能連到 <code>us-central1-docker.pkg.dev</code>(範例映像來源)</li>
+<li>範例映像為 <strong>AMD64</strong>;Apple Silicon 需要容器執行環境支援 AMD64 模擬</li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>一個 Project 如何容納多個 Component</li>
+<li>用 <code>Resource</code> 宣告資料庫或快取,並讓元件取得連線字串</li>
+<li>用 <code>dependencies</code> 讓服務自動取得彼此的位址</li>
+<li>驗證整個購物流程</li>
+<li>故意弄壞一個服務,練習定位問題</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:微服務與服務之間的呼叫" duration="10">
+        <h2 is-upgraded>單體 vs 微服務</h2>
+<table>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>單體(Monolith)</p>
+</td><td colspan="1" rowspan="1"><p>微服務(Microservices)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>結構</p>
+</td><td colspan="1" rowspan="1"><p>所有功能在一個程式裡</p>
+</td><td colspan="1" rowspan="1"><p>每個功能一個獨立服務</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>優點</p>
+</td><td colspan="1" rowspan="1"><p>簡單、呼叫快、好除錯</p>
+</td><td colspan="1" rowspan="1"><p>各服務可獨立開發、部署、擴展,可用不同語言</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>缺點</p>
+</td><td colspan="1" rowspan="1"><p>越大越難改、一處壞全壞</p>
+</td><td colspan="1" rowspan="1"><p>服務之間的網路呼叫、整體複雜度、更難排錯</p>
+</td></tr>
+</table>
+<p>微服務不是銀彈,它用「分散式系統的複雜度」換「組織與部署的彈性」。這也是為什麼平台需要幫忙:依賴、設定、觀測都要有人管。</p>
+<h2 is-upgraded>Online Boutique</h2>
+<p>這一課的範例是 Google 公開的微服務示範應用(線上商店)。它刻意用不同語言(Go、C#、Node.js、Python、Java)寫成,適合展示多語言環境。</p>
+<h2 is-upgraded>gRPC 與 Protocol Buffers</h2>
+<p>服務之間常用 <strong>gRPC</strong> 溝通,它是 Google 開發的高效能遠端呼叫框架:</p>
+<table>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>REST/JSON</p>
+</td><td colspan="1" rowspan="1"><p>gRPC</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>格式</p>
+</td><td colspan="1" rowspan="1"><p>文字(JSON)</p>
+</td><td colspan="1" rowspan="1"><p>二進位(Protocol Buffers)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>契約</p>
+</td><td colspan="1" rowspan="1"><p>常靠文件</p>
+</td><td colspan="1" rowspan="1"><p>用 <code>.proto</code> 檔嚴格定義</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>傳輸</p>
+</td><td colspan="1" rowspan="1"><p>HTTP/1.1 為主</p>
+</td><td colspan="1" rowspan="1"><p>HTTP/2,可串流</p>
+</td></tr>
+</table>
+<p>在 OpenChoreo 中,端點的 <code>type: gRPC</code> 會讓平台知道要怎麼建立 Service。</p>
+<h2 is-upgraded>服務如何找到彼此:服務探索</h2>
+<p>Pod 的 IP 會隨時變動,所以不能寫死 IP。Kubernetes 用 <strong>Service</strong> 提供穩定的名稱,並由叢集 DNS 解析:</p>
+<pre><code>&lt;服務名&gt;.&lt;namespace&gt;.svc.cluster.local:&lt;port&gt;
+</code></pre>
+<p>你在第 9 課會看到 frontend 收到的環境變數,就是這種格式(例如 <code>cart.dp-default-...svc.cluster.local:7070</code>)。<strong>OpenChoreo 幫你算出這個位址並注入環境變數</strong>,你只需宣告「我依賴 cart 的 grpc 端點」。</p>
+<h2 is-upgraded>有狀態與無狀態</h2>
+<table>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>無狀態(Stateless)</p>
+</td><td colspan="1" rowspan="1"><p>有狀態(Stateful)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>例子</p>
+</td><td colspan="1" rowspan="1"><p>frontend、checkout</p>
+</td><td colspan="1" rowspan="1"><p>Redis、資料庫</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>特性</p>
+</td><td colspan="1" rowspan="1"><p>任何副本都一樣,隨時可替換</p>
+</td><td colspan="1" rowspan="1"><p>資料要保存,不能隨便丟</p>
+</td></tr>
+</table>
+<p>無狀態服務適合用 Deployment 擴縮。有狀態的基礎設施(資料庫、快取)比較麻煩,所以 OpenChoreo 提供 <strong>Resource</strong> 抽象:你宣告「我要一個 valkey」,平台負責佈建並把連線資訊安全地交給需要它的元件(經由 Secret,而不是寫在設定裡)。</p>
+<h2 is-upgraded>連鎖故障(Cascading Failure)</h2>
+<p>微服務最可怕的事:<strong>一個服務壞了,依賴它的服務跟著壞,一路往上蔓延</strong>。本課的排錯演練就是示範:關掉 productcatalog,結果整個首頁回 500。</p>
+<p>防禦手段(超出本課範圍,但值得知道):</p>
+<ul>
+<li><strong>逾時(timeout)</strong>:不要無限等待</li>
+<li><strong>重試與退避</strong>:短暫故障自動恢復,但要避免「重試風暴」</li>
+<li><strong>斷路器(circuit breaker)</strong>:持續失敗就先停止呼叫</li>
+<li><strong>降級(graceful degradation)</strong>:商品目錄壞了,至少顯示靜態頁</li>
+</ul>
+<h2 is-upgraded>排錯思維</h2>
+<p>Google SRE 書中提出的<strong>四個黃金訊號</strong>,是判斷服務健康的好起點:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>訊號</p>
+</td><td colspan="1" rowspan="1"><p>問題</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>延遲(Latency)</p>
+</td><td colspan="1" rowspan="1"><p>請求花多久?</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>流量(Traffic)</p>
+</td><td colspan="1" rowspan="1"><p>有多少請求?</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>錯誤(Errors)</p>
+</td><td colspan="1" rowspan="1"><p>多少請求失敗?</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>飽和度(Saturation)</p>
+</td><td colspan="1" rowspan="1"><p>資源用到多滿?</p>
+</td></tr>
+</table>
+<p>排錯的通用順序:<strong>症狀 → 哪個服務 → 為什麼 → 誰改了什麼</strong>。本課的排錯演練會帶你照這個順序走一遍。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="架構" duration="4">
+        <pre><code>                        ┌──────────┐
+ 瀏覽器 ──(外部)──────▶ │ frontend │
+                        └────┬─────┘
+        ┌───────┬────────┬───┴────┬─────────┬──────────┬───────────┐
+        ▼       ▼        ▼        ▼         ▼          ▼           ▼
+       ad     cart   checkout  currency  recommendation shipping productcatalog
+                │        │
+                ▼        ├──▶ payment
+             [redis]     ├──▶ email
+                         └──▶ shipping / currency / productcatalog / cart
+</code></pre>
+<table>
+<tr><td colspan="1" rowspan="1"><p>服務</p>
+</td><td colspan="1" rowspan="1"><p>語言</p>
+</td><td colspan="1" rowspan="1"><p>角色</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>frontend</p>
+</td><td colspan="1" rowspan="1"><p>Go</p>
+</td><td colspan="1" rowspan="1"><p>網站,<strong>唯一對外</strong>的服務</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>productcatalog</p>
+</td><td colspan="1" rowspan="1"><p>Go</p>
+</td><td colspan="1" rowspan="1"><p>商品目錄</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>cart</p>
+</td><td colspan="1" rowspan="1"><p>C#</p>
+</td><td colspan="1" rowspan="1"><p>購物車,資料存在 Redis</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>checkout</p>
+</td><td colspan="1" rowspan="1"><p>Go</p>
+</td><td colspan="1" rowspan="1"><p>結帳,協調其他服務</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>currency / payment</p>
+</td><td colspan="1" rowspan="1"><p>Node.js</p>
+</td><td colspan="1" rowspan="1"><p>匯率、付款</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>email / recommendation</p>
+</td><td colspan="1" rowspan="1"><p>Python</p>
+</td><td colspan="1" rowspan="1"><p>寄信、推薦</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>shipping / ad</p>
+</td><td colspan="1" rowspan="1"><p>Go / Java</p>
+</td><td colspan="1" rowspan="1"><p>運費、廣告</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>redis</p>
+</td><td colspan="1" rowspan="1"><p>Valkey</p>
+</td><td colspan="1" rowspan="1"><p>購物車快取,以 <strong>Resource</strong> 宣告</p>
+</td></tr>
+</table>
+<p>Positive : 只有 <code>frontend</code> 宣告了 <code>visibility: [external]</code>,其他服務預設只在 Project 內可見。這是 OpenChoreo 的「預設封閉」:內部服務不會因為你忘了設定而暴露到外面。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="建立 Project" duration="4">
+        <pre><code language="language-bash" class="language-bash">R=https://raw.githubusercontent.com/openchoreo/openchoreo/release-v1.3/samples/gcp-microservices-demo
+kubectl apply -f $R/gcp-microservice-demo-project.yaml
+</code></pre>
+<p>這個檔案包含一個 Project 與三個 <code>ProjectReleaseBinding</code>(development、staging、production):</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: gcp-microservice-demo
+  namespace: default
+spec:
+  deploymentPipelineRef:
+    name: default
+  type:
+    kind: ClusterProjectType
+    name: default
+</code></pre>
+<p>第 2 課提過:Project 對應到隔離的 namespace 與網路邊界。看看它在 Data Plane 上建了什麼:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get ns | grep dp-default-gcp
+</code></pre>
+<p>預期有 development、staging、production 三個 namespace。</p>
+<p>Negative : namespace 名稱會被截短成 <code>dp-default-gcp-microserv-<環境>-<雜湊></code>(Project 名稱太長),不要用猜的,用 <code>kubectl get ns | grep dp-default-gcp</code> 查。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="用 Resource 宣告 Redis" duration="6">
+        <p><code>cart</code> 需要 Redis。我們不手寫 StatefulSet,而是宣告一個 <code>Resource</code>,類型是平台提供的 <code>valkey</code>(<code>ClusterResourceType</code>):</p>
+<pre><code language="language-bash" class="language-bash">kubectl get clusterresourcetype
+</code></pre>
+<p>預期有 <code>nats</code>、<code>postgres</code>、<code>valkey</code>。</p>
+<p><code>resources/redis.yaml</code> 的重點:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Resource
+metadata:
+  name: redis
+  namespace: default
+spec:
+  owner:
+    projectName: gcp-microservice-demo
+  type:
+    kind: ClusterResourceType
+    name: valkey
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: ResourceReleaseBinding
+metadata:
+  name: redis-development
+  namespace: default
+spec:
+  owner:
+    projectName: gcp-microservice-demo
+    resourceName: redis
+  environment: development
+  retainPolicy: Delete
+</code></pre>
+<p>這和元件的 Release / ReleaseBinding 模型一模一樣:Resource 產生不可變的 <code>ResourceRelease</code>,<code>ResourceReleaseBinding</code> 把它釘到某個環境。</p>
+<p>套用,並把綁定釘到最新的 Release(控制器先建立 Release,綁定的 <code>resourceRelease</code> 欄位起初是空的):</p>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f $R/resources/redis.yaml
+until release=$(kubectl get resource redis -n default -o jsonpath=&#39;{.status.latestRelease.name}&#39;) &amp;&amp; [ -n &#34;$release&#34; ]; do sleep 2; done
+kubectl patch resourcereleasebinding redis-development -n default \
+  --type=merge -p &#34;{\&#34;spec\&#34;:{\&#34;resourceRelease\&#34;:\&#34;$release\&#34;}}&#34;
+kubectl get resourcereleasebinding redis-development -n default
+</code></pre>
+<p>預期 <code>READY</code> 變成 <code>True</code>(剛套用時會短暫是 <code>False</code>)。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="服務依賴" duration="6">
+        <p>看 <code>cart</code> 的 Workload,它宣告了對 Redis 的<strong>資源依賴</strong>:</p>
+<pre><code language="language-yaml" class="language-yaml">spec:
+  endpoints:
+    grpc:
+      type: gRPC
+      port: 7070
+  dependencies:
+    resources:
+      - ref: redis
+        envBindings:
+          connectionString: REDIS_ADDR
+</code></pre>
+<p><code>envBindings</code> 的意思:把 Redis 輸出的 <code>connectionString</code>,注入成環境變數 <code>REDIS_ADDR</code>。</p>
+<p>再看 <code>frontend</code> 的<strong>端點依賴</strong>(節錄):</p>
+<pre><code language="language-yaml" class="language-yaml">  dependencies:
+    endpoints:
+      - project: gcp-microservice-demo
+        component: cart
+        name: grpc
+        visibility: project
+        envBindings:
+          address: CART_SERVICE_ADDR
+      # ... 還有 ad、checkout、currency、payment、
+      #     recommendation、shipping、productcatalog
+</code></pre>
+<p>開發者只宣告「我依賴 cart 的 grpc 端點」,平台負責算出實際位址、注入環境變數。</p>
+<h2 is-upgraded>部署全部元件</h2>
+<pre><code language="language-bash" class="language-bash">args=&#34;&#34;
+for c in ad cart checkout currency email frontend payment productcatalog recommendation shipping; do
+  args=&#34;$args -f $R/components/$c-component.yaml&#34;
+done
+kubectl apply $args
+</code></pre>
+<p>等待所有 Deployment 就緒(第一次需要下載映像,實測約 1 到 2 分鐘,網路慢時會更久):</p>
+<pre><code language="language-bash" class="language-bash">kubectl get deploy -A -l openchoreo.dev/project=gcp-microservice-demo
+</code></pre>
+<p>預期 10 個 Deployment 都是 <code>1/1</code>。</p>
+<h2 is-upgraded>驗證依賴注入</h2>
+<pre><code language="language-bash" class="language-bash">NS=$(kubectl get ns -o name | grep dp-default-gcp.*development | cut -d/ -f2)
+
+# frontend 拿到其他服務的位址
+kubectl get deploy -n $NS -l openchoreo.dev/component=frontend \
+  -o jsonpath=&#39;{range .items[0].spec.template.spec.containers[0].env[*]}{.name}={.value}{&#34;\n&#34;}{end}&#39;
+
+# cart 的 REDIS_ADDR 來自 Secret
+kubectl get deploy -n $NS -l openchoreo.dev/component=cart \
+  -o jsonpath=&#39;{.items[0].spec.template.spec.containers[0].env}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>預期 frontend 看到 <code>CART_SERVICE_ADDR=cart.<namespace>.svc.cluster.local:7070</code> 這類位址;cart 的 <code>REDIS_ADDR</code> 用 <code>secretKeyRef</code> 指向 Redis 的連線字串 Secret,<strong>密碼不會出現在 Deployment 裡</strong>。</p>
+<p>Positive : 這就是平台抽象的價值:位址、Secret 的名稱與 key 全由平台管理。開發者換環境時,不需要改任何一個 URL。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="測試商店" duration="6">
+        <p>找出 frontend 的外部網址:</p>
+<pre><code language="language-bash" class="language-bash">HOST=$(kubectl get httproute -A -l openchoreo.dev/component=frontend \
+  -o jsonpath=&#39;{.items[0].spec.hostnames[0]}&#39;)
+H=http://$HOST:19080
+echo $H
+</code></pre>
+<p>用瀏覽器開啟,或用 <code>curl</code> 走完整個流程:</p>
+<pre><code language="language-bash" class="language-bash"># 首頁與商品頁
+curl -s -o /dev/null -w &#34;%{http_code}\n&#34; $H/
+curl -s -o /dev/null -w &#34;%{http_code}\n&#34; $H/product/OLJCESPC7Z
+
+# 加入購物車(2 件),再查看
+curl -s -c /tmp/cj -b /tmp/cj -o /dev/null -w &#34;%{http_code}\n&#34; \
+  -d &#34;product_id=OLJCESPC7Z&amp;quantity=2&#34; $H/cart
+curl -s -b /tmp/cj $H/cart | grep -o -E &#34;Cart \([0-9]+\)|Sunglasses&#34; | sort -u
+
+# 結帳
+curl -s -b /tmp/cj -c /tmp/cj -o /tmp/order.html -d &#34;email=someone@example.com&amp;street_address=1600 Amphitheatre Parkway&amp;zip_code=94043&amp;city=Mountain View&amp;state=CA&amp;country=United States&amp;credit_card_number=4432801561520454&amp;credit_card_expiration_month=1&amp;credit_card_expiration_year=2030&amp;credit_card_cvv=672&#34; \
+  $H/cart/checkout
+grep -o &#34;Your order is complete&#34; /tmp/order.html
+</code></pre>
+<p>預期:兩個 <code>200</code>、加入購物車回 <code>302</code>、看到 <code>Cart (2)</code> 與 <code>Sunglasses</code>、最後印出 <code>Your order is complete</code>。</p>
+<p>這一個結帳請求,牽動了 frontend → checkout → cart(Redis)/ productcatalog / currency / shipping / payment / email 共 7 個服務。</p>
+<p>Negative : 範例文件說服務完全就緒可能要 5 到 10 分鐘。若頁面回 500 或連不上,先等一下,再用 <code>kubectl get pods -A | grep -v Running</code> 找出還沒就緒的 Pod。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="排錯演練" duration="8">
+        <p>練習「從症狀倒推原因」。我們讓 <code>productcatalog</code> 下線:</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch releasebinding productcatalog-development -n default --type merge \
+  -p &#39;{&#34;spec&#34;:{&#34;componentTypeEnvironmentConfigs&#34;:{&#34;replicas&#34;:0}}}&#39;
+sleep 15
+curl -s -o /dev/null -w &#34;%{http_code}\n&#34; $H/
+</code></pre>
+<h2 is-upgraded>症狀:首頁回 500</h2>
+<p>頁面上會有錯誤細節,類似:</p>
+<pre><code>rpc error: code = Unavailable desc = connection error: desc = &#34;transport: Error while dialing: dial tcp 10.43.x.x:3550: connect: connection refused&#34;
+</code></pre>
+<h2 is-upgraded>步驟 1:錯誤訊息告訴你什麼?</h2>
+<ul>
+<li><code>Unavailable</code> + <code>connection refused</code> + 連接埠 <strong>3550</strong>。回頭看架構表,3550 是 <code>productcatalog</code>。</li>
+</ul>
+<h2 is-upgraded>步驟 2:看呼叫端的日誌</h2>
+<pre><code language="language-bash" class="language-bash">kubectl logs -n $NS deploy/$(kubectl get deploy -n $NS -l openchoreo.dev/component=frontend \
+  -o jsonpath=&#39;{.items[0].metadata.name}&#39;) --tail=200 | grep -i &#34;could not retrieve&#34;
+</code></pre>
+<p>會看到 <code>could not retrieve products: rpc error: code = Unavailable ...</code>。</p>
+<h2 is-upgraded>步驟 3:確認被呼叫端</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get deploy -n $NS | grep productcatalog     # 0/0
+kubectl get endpoints -n $NS productcatalog         # &lt;none&gt;
+</code></pre>
+<p>Deployment 是 <code>0/0</code>、Service 沒有任何後端,原因就找到了。</p>
+<h2 is-upgraded>步驟 4:找出為什麼是 0</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get releasebinding productcatalog-development -n default -o yaml | grep -A3 componentTypeEnvironmentConfigs
+</code></pre>
+<p>有人(就是我們)把 <code>replicas</code> 覆寫成 0。</p>
+<h2 is-upgraded>修復</h2>
+<pre><code language="language-bash" class="language-bash">kubectl patch releasebinding productcatalog-development -n default --type merge \
+  -p &#39;{&#34;spec&#34;:{&#34;componentTypeEnvironmentConfigs&#34;:{&#34;replicas&#34;:1}}}&#39;
+kubectl wait --for=condition=Available deploy -n $NS -l openchoreo.dev/component=productcatalog --timeout=120s
+curl -s -o /dev/null -w &#34;%{http_code}\n&#34; $H/
+</code></pre>
+<p>實測 Pod 就緒後 5 秒內首頁恢復 <code>200</code>。</p>
+<p>Positive : 排錯口訣:<strong>症狀 → 錯誤碼與連接埠 → 呼叫端日誌 → 被呼叫端狀態 → 找出誰改了什麼</strong>。因為所有環境差異都集中在 ReleaseBinding,最後一步通常就看那裡。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="選修:啟用分散式追蹤" duration="8">
+        <p>範例中 7 個服務(frontend、checkout、productcatalog、currency、payment、email、recommendation)已內建 OpenTelemetry。這一節需要先完成第 7 課的 Observability Plane。</p>
+<p>把 Collector 位址與開關加進 Workload:</p>
+<pre><code language="language-bash" class="language-bash">COLLECTOR_ADDR=&#34;opentelemetry-collector.openchoreo-observability-plane.svc.cluster.local:4317&#34;
+for svc in checkout currency email frontend payment productcatalog recommendation; do
+  kubectl patch workload &#34;$svc&#34; -n default --type=json -p=&#34;[
+    {\&#34;op\&#34;:\&#34;add\&#34;,\&#34;path\&#34;:\&#34;/spec/container/env/-\&#34;,\&#34;value\&#34;:{\&#34;key\&#34;:\&#34;COLLECTOR_SERVICE_ADDR\&#34;,\&#34;value\&#34;:\&#34;$COLLECTOR_ADDR\&#34;}},
+    {\&#34;op\&#34;:\&#34;add\&#34;,\&#34;path\&#34;:\&#34;/spec/container/env/-\&#34;,\&#34;value\&#34;:{\&#34;key\&#34;:\&#34;ENABLE_TRACING\&#34;,\&#34;value\&#34;:\&#34;1\&#34;}}]&#34;
+done
+</code></pre>
+<p>Negative : <strong>環境變數在 ConfigMap 裡,Pod 不會自動重啟。</strong> 修改後 ConfigMap 名稱沒變,所以 Deployment 不會滾動更新,新環境變數不會生效。需要手動重啟:<code>kubectl rollout restart deploy -n $NS -l openchoreo.dev/component=<服務></code>。</p>
+<p>重啟、打幾次流量後,查看 OpenSearch(帳密與 port-forward 見第 7 課):</p>
+<pre><code language="language-bash" class="language-bash">curl -sk -u &#34;$U:$P&#34; &#34;https://localhost:19200/_cat/indices?h=index,docs.count&#34; | grep otel
+</code></pre>
+<p>實測出現了 <code>otel-traces-YYYY-MM-DD</code> 索引,span 帶有 <code>k8s.deployment.name</code>、<code>k8s.namespace.name</code> 等屬性,來源包含 frontend 與 productcatalog。</p>
+<p>Negative : 作者實測只看到 OTLP 匯出器<strong>自己</strong>的 gRPC span(<code>opentelemetry.proto.collector.trace.v1.TraceService/Export</code>),沒有看到 <code>GET /</code> 這類請求層級的 span。追蹤管線本身確實通了,但請求層級追蹤是否完整,本課沒有驗證。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="清理" duration="3">
+        <pre><code language="language-bash" class="language-bash">kubectl delete $args
+kubectl delete -f $R/resources/redis.yaml
+kubectl delete -f $R/gcp-microservice-demo-project.yaml
+</code></pre>
+<p>Project 刪除後,Data Plane 上的 <code>dp-default-gcp-*</code> namespace 會進入 Terminating,一兩分鐘內消失。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li>frontend 怎麼知道 cart 的位址?</li>
+<li>cart 的 <code>REDIS_ADDR</code> 為什麼用 <code>secretKeyRef</code>?</li>
+<li>productcatalog 下線時,首頁回 500。你會依什麼順序排錯?</li>
+<li>為什麼改了 <code>ENABLE_TRACING</code> 還要重啟 Pod?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>在 Workload 宣告對 cart grpc 端點的 dependency,平台計算出位址並注入環境變數(格式如 <code>cart.<ns>.svc.cluster.local:7070</code>)。</li>
+<li>連線字串屬於敏感資訊,放在 Secret 並以參照注入,不會明文出現在 Deployment 裡。</li>
+<li>症狀 → 錯誤碼與連接埠(3550 = productcatalog)→ 呼叫端日誌 → 被呼叫端狀態(0/0、無 endpoints)→ 找出誰改了什麼(ReleaseBinding 的 replicas)。</li>
+<li>環境變數在 ConfigMap 裡,ConfigMap 名稱沒變所以 Deployment 不會滾動更新,Pod 不會自動重讀。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="恭喜與下一步" duration="1">
+        <p>你已經:</p>
+<ul>
+<li>✅ 部署了 10 個服務加一個 Redis Resource 的完整應用</li>
+<li>✅ 理解端點依賴與資源依賴如何自動注入設定</li>
+<li>✅ 跑通了瀏覽、加入購物車、結帳的完整流程</li>
+<li>✅ 練習了從 500 錯誤定位到被關閉的服務</li>
+<li>✅ 讓真實的服務把 span 送進 Observability Plane</li>
+</ul>
+<h2 is-upgraded>延伸閱讀</h2>
+<ul>
+<li><a href="https://github.com/openchoreo/openchoreo/tree/release-v1.3/samples/gcp-microservices-demo" target="_blank">Google Microservices Demo 範例</a></li>
+<li><a href="https://openchoreo.dev/docs/" target="_blank">OpenChoreo 文件</a></li>
+</ul>
+<h2 is-upgraded>下一課</h2>
+<p><strong>10:AI 與 MCP 整合(選修)</strong> — 讓 AI 代理人透過 MCP 操作 OpenChoreo。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

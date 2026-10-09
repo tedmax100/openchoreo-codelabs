@@ -1,0 +1,28 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterTrait
+metadata:
+  name: pod-disruption-budget
+  annotations:
+    openchoreo.dev/description: 為元件建立 PodDisruptionBudget,避免維護時同時下線過多 Pod
+spec:
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        minAvailable:
+          type: integer
+          default: 1
+          minimum: 0
+  creates:
+    - targetPlane: dataplane
+      template:
+        apiVersion: policy/v1
+        kind: PodDisruptionBudget
+        metadata:
+          name: ${metadata.name}-${trait.instanceName}
+          namespace: ${metadata.namespace}
+          labels: ${metadata.labels}
+        spec:
+          minAvailable: ${parameters.minAvailable}
+          selector:
+            matchLabels: ${metadata.podSelectors}

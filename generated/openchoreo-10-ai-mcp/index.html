@@ -1,0 +1,529 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 10:AI 與 MCP 整合</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-10-ai-mcp"
+                  title="OpenChoreo 實戰 10:AI 與 MCP 整合"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <p>OpenChoreo 內建 <strong>MCP(Model Context Protocol)</strong> 伺服器,讓 AI 助理能用標準協定查詢與操作平台:列出專案、觸發建置、查詢日誌與指標、晉升版本。AI 看到的是和你相同的資源模型,並且受<strong>同一套權限</strong>限制。</p>
+<h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成第 1 到 3 課</li>
+<li>第 7 課的 Observability Plane(使用觀測相關工具時需要)</li>
+<li>本機有 <code>curl</code> 與 Python 3</li>
+<li>建議:Claude Code、Cursor、Gemini CLI 等支援 MCP 的 AI 助理(本課的助理端設定<strong>未實測</strong>)</li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>兩個 MCP 伺服器各提供什麼</li>
+<li>用 Client Credentials 取得存取 token</li>
+<li>不靠任何 AI 客戶端,用 MCP 協定直接呼叫工具</li>
+<li>讀取、查詢與寫入三類操作</li>
+<li>權限與安全:AI 能做什麼、不能做什麼</li>
+</ul>
+<p>Positive : 本課的 MCP 呼叫全部用一支 Python 腳本直接對伺服器說 MCP 協定,不依賴任何 AI 客戶端。好處是你能看清楚協定本身,也能確定伺服器端的行為。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:AI 代理人與 MCP" duration="10">
+        <h2 is-upgraded>大型語言模型怎麼「做事」?</h2>
+<p>大型語言模型(LLM)本身只會產生文字。要讓它能真的查資料、操作系統,需要<strong>工具呼叫(tool use)</strong>:</p>
+<pre><code>你: 「production 有沒有錯誤?」
+  │
+  ▼
+AI 判斷需要查日誌 ──▶ 發出「呼叫 query_component_logs,參數 ...」
+  │                              │
+  │◀────── 工具回傳結果 ◀────────┘
+  ▼
+AI 閱讀結果,用自然語言回答你
+</code></pre>
+<p>AI 自己不碰你的系統,它只是「請求呼叫某個工具」,由外部程式執行並把結果還給它。</p>
+<h2 is-upgraded>問題:每個工具都要各寫一套整合</h2>
+<p>如果有 N 個 AI 應用、M 個系統,就需要 N × M 個整合。<strong>MCP(Model Context Protocol)</strong> 是 Anthropic 提出的開放協定,目標是統一這件事:AI 應用實作一次 MCP 客戶端,系統實作一次 MCP 伺服器,就能互通。類比:USB 讓所有裝置共用同一種接口。</p>
+<h2 is-upgraded>MCP 的角色與能力</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>角色</p>
+</td><td colspan="1" rowspan="1"><p>說明</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>MCP 客戶端</strong></p>
+</td><td colspan="1" rowspan="1"><p>AI 應用(Claude Code、Cursor...)內建的連線元件</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>MCP 伺服器</strong></p>
+</td><td colspan="1" rowspan="1"><p>提供能力的一方,本課就是 OpenChoreo</p>
+</td></tr>
+</table>
+<p>伺服器可以提供三類東西:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>類型</p>
+</td><td colspan="1" rowspan="1"><p>說明</p>
+</td><td colspan="1" rowspan="1"><p>本課</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Tools(工具)</strong></p>
+</td><td colspan="1" rowspan="1"><p>AI 可以呼叫的動作,有名稱與參數 schema</p>
+</td><td colspan="1" rowspan="1"><p>✅ 主角</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Resources(資源)</strong></p>
+</td><td colspan="1" rowspan="1"><p>可讀取的資料</p>
+</td><td colspan="1" rowspan="1"><p>未使用</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Prompts(提示)</strong></p>
+</td><td colspan="1" rowspan="1"><p>預先寫好的提示模板</p>
+</td><td colspan="1" rowspan="1"><p>未使用</p>
+</td></tr>
+</table>
+<h2 is-upgraded>協定長什麼樣?</h2>
+<p>MCP 的訊息格式是 <strong>JSON-RPC 2.0</strong>:</p>
+<pre><code language="language-json" class="language-json">{&#34;jsonrpc&#34;:&#34;2.0&#34;,&#34;id&#34;:1,&#34;method&#34;:&#34;tools/call&#34;,
+ &#34;params&#34;:{&#34;name&#34;:&#34;list_projects&#34;,&#34;arguments&#34;:{&#34;namespace_name&#34;:&#34;default&#34;}}}
+</code></pre>
+<p>傳輸方式有兩種常見的:本機程序用 <strong>stdio</strong>,遠端服務用 <strong>HTTP</strong>(OpenChoreo 用 HTTP)。因為就是 HTTP 加 JSON,所以我們才能用 <code>curl</code> 或幾十行 Python 直接和它對話。</p>
+<h2 is-upgraded>工具的 schema:AI 怎麼知道怎麼用?</h2>
+<p>每個工具附帶一份 JSON Schema(<code>inputSchema</code>),說明有哪些參數、型別、哪些必填。AI 讀這份說明就知道怎麼組出正確的呼叫。如果缺參數,伺服器回傳錯誤訊息,AI 通常會自己修正後重試。</p>
+<h2 is-upgraded>認證:OAuth 的兩種流程</h2>
+<p>AI 要呼叫 API,必須證明身分。OpenChoreo 用 OAuth 2.0 的兩種授權方式:</p>
+<table>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>Authorization Code + PKCE</p>
+</td><td colspan="1" rowspan="1"><p>Client Credentials</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>誰在操作</p>
+</td><td colspan="1" rowspan="1"><p><strong>人</strong>在瀏覽器登入並授權</p>
+</td><td colspan="1" rowspan="1"><p><strong>程式</strong>用自己的帳密換 token</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>適用</p>
+</td><td colspan="1" rowspan="1"><p>桌面型 AI 助理</p>
+</td><td colspan="1" rowspan="1"><p>腳本、自動化、無人值守</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>代表身分</p>
+</td><td colspan="1" rowspan="1"><p>該使用者</p>
+</td><td colspan="1" rowspan="1"><p>該應用本身</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>本課</p>
+</td><td colspan="1" rowspan="1"><p>只列出設定</p>
+</td><td colspan="1" rowspan="1"><p>實際操作</p>
+</td></tr>
+</table>
+<p><strong>PKCE</strong> 是保護公開客戶端(無法安全保存密碼的應用)的機制,避免授權碼被攔截後被冒用。</p>
+<p>取得的 <strong>access token</strong> 是一串有時效的憑證,放在 HTTP 標頭 <code>Authorization: Bearer <token></code> 送出。</p>
+<h2 is-upgraded>AI 操作基礎設施的風險</h2>
+<p>讓 AI 能刪專案,必須認真面對風險:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>風險</p>
+</td><td colspan="1" rowspan="1"><p>說明</p>
+</td><td colspan="1" rowspan="1"><p>對策</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>權限過大</strong></p>
+</td><td colspan="1" rowspan="1"><p>AI 用了高權限帳號,一次誤判影響範圍很大</p>
+</td><td colspan="1" rowspan="1"><p>最小權限、專用帳號</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>誤操作</strong></p>
+</td><td colspan="1" rowspan="1"><p>AI 理解錯誤,執行了不該做的事</p>
+</td><td colspan="1" rowspan="1"><p>寫入前讓人確認、先唯讀</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>提示注入(Prompt Injection)</strong></p>
+</td><td colspan="1" rowspan="1"><p>日誌、網頁等<strong>不可信內容</strong>裡夾帶指令,誘騙 AI 照做</p>
+</td><td colspan="1" rowspan="1"><p>把工具回傳的內容視為資料而非指令、限制寫入權限</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>洩漏</strong></p>
+</td><td colspan="1" rowspan="1"><p>憑證被貼進對話或日誌</p>
+</td><td colspan="1" rowspan="1"><p>定期更換、不要硬寫在設定檔</p>
+</td></tr>
+</table>
+<p>特別注意提示注入:AI 查詢<strong>應用程式日誌</strong>時,日誌內容可能由外部使用者控制(例如使用者輸入的字串被記錄下來)。這些文字進入 AI 的上下文後,可能被當成指令。所以「AI 能讀日誌」和「AI 能改系統」這兩種能力最好分開授權。</p>
+<h2 is-upgraded>OpenChoreo 的立場</h2>
+<p>MCP 只是控制平面 API 的另一個入口,<strong>沿用同一套 RBAC、稽核與資源模型</strong>,沒有另一套後門。這是它安全模型的基礎。</p>
+<p>準備好了嗎?看看兩個 MCP 伺服器。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="兩個 MCP 伺服器" duration="4">
+        <table>
+<tr><td colspan="1" rowspan="1"><p>伺服器</p>
+</td><td colspan="1" rowspan="1"><p>本機位址</p>
+</td><td colspan="1" rowspan="1"><p>職責</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Control Plane MCP</strong></p>
+</td><td colspan="1" rowspan="1"><p><code>http://api.openchoreo.localhost:8080/mcp</code></p>
+</td><td colspan="1" rowspan="1"><p>管理資源、部署、建置、平台設定</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Observability MCP</strong></p>
+</td><td colspan="1" rowspan="1"><p><code>http://observer.openchoreo.localhost:11080/mcp</code></p>
+</td><td colspan="1" rowspan="1"><p>日誌、指標、追蹤、告警、成本、DORA</p>
+</td></tr>
+</table>
+<h2 is-upgraded>Control Plane 的工具分類</h2>
+<p>預設啟用七個工具集:<code>namespace</code>、<code>project</code>、<code>component</code>、<code>resource</code>、<code>deployment</code>、<code>build</code>、<code>pe</code>(平台工程)。</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>類別</p>
+</td><td colspan="1" rowspan="1"><p>範例工具</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>命名空間與專案</p>
+</td><td colspan="1" rowspan="1"><p><code>list_namespaces</code>、<code>create_project</code>、<code>delete_project</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>元件</p>
+</td><td colspan="1" rowspan="1"><p><code>list_components</code>、<code>create_component</code>、<code>patch_component</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Workload</p>
+</td><td colspan="1" rowspan="1"><p><code>get_workload</code>、<code>update_workload</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>部署</p>
+</td><td colspan="1" rowspan="1"><p><code>list_release_bindings</code>、<code>update_release_binding</code>(晉升就是這個)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>建置</p>
+</td><td colspan="1" rowspan="1"><p><code>trigger_workflow_run</code>、<code>get_workflow_run_logs</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>平台工程</p>
+</td><td colspan="1" rowspan="1"><p><code>create_environment</code>、<code>create_component_type</code>、<code>*_authz_role</code></p>
+</td></tr>
+</table>
+<p>實測這個環境的 Control Plane MCP 回報 <strong>130 個工具</strong>。</p>
+<h2 is-upgraded>Observability 的工具</h2>
+<p>實測回報 <strong>17 個工具</strong>:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>類別</p>
+</td><td colspan="1" rowspan="1"><p>工具</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>日誌</p>
+</td><td colspan="1" rowspan="1"><p><code>query_component_logs</code>、<code>query_workflow_logs</code>、<code>query_platform_logs</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>指標</p>
+</td><td colspan="1" rowspan="1"><p><code>query_http_metrics</code>、<code>query_resource_metrics</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>追蹤</p>
+</td><td colspan="1" rowspan="1"><p><code>query_traces</code>、<code>query_trace_spans</code>、<code>get_span_details</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>告警/事故</p>
+</td><td colspan="1" rowspan="1"><p><code>query_alerts</code>、<code>query_incidents</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>成本</p>
+</td><td colspan="1" rowspan="1"><p><code>query_costs</code>、<code>query_recommendations</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>交付</p>
+</td><td colspan="1" rowspan="1"><p><code>query_dora_metrics</code>、<code>query_dora_deployments</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>稽核/事件</p>
+</td><td colspan="1" rowspan="1"><p><code>query_audit_logs</code>、<code>query_component_events</code>、<code>query_workflow_events</code></p>
+</td></tr>
+</table>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="取得存取 token" duration="4">
+        <p>OpenChoreo 預先建立了兩個 OAuth 應用:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>應用</p>
+</td><td colspan="1" rowspan="1"><p>授權方式</p>
+</td><td colspan="1" rowspan="1"><p>用途</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>user_mcp_client</code></p>
+</td><td colspan="1" rowspan="1"><p>Authorization Code + PKCE</p>
+</td><td colspan="1" rowspan="1"><p>能開瀏覽器登入的 AI 助理</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>service_mcp_client</code></p>
+</td><td colspan="1" rowspan="1"><p>Client Credentials</p>
+</td><td colspan="1" rowspan="1"><p>腳本、自動化、不能開瀏覽器的代理人</p>
+</td></tr>
+</table>
+<p>用 Client Credentials 向 ThunderID 要 token:</p>
+<pre><code language="language-bash" class="language-bash">curl -s -X POST &#34;http://thunder.openchoreo.localhost:8080/oauth2/token&#34; \
+  -H &#39;Content-Type: application/x-www-form-urlencoded&#39; \
+  -u &#39;service_mcp_client:service_mcp_client_secret&#39; \
+  -d &#39;grant_type=client_credentials&#39;
+</code></pre>
+<p>預期回傳 JSON,包含 <code>access_token</code>、<code>token_type: Bearer</code>、<code>expires_in</code>。</p>
+<p>Positive : 官方文件寫 token 有效期約 1 小時,實測這個環境回傳的是 <code>expires_in: 86400</code>(24 小時)。以回應內容為準。</p>
+<p>Negative : <code>service_mcp_client_secret</code> 是公開的<strong>預設值</strong>,只適用於本機實驗。正式環境務必建立自訂的 OAuth 應用,並綁定最小權限的角色。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="用腳本說 MCP 協定" duration="8">
+        <p>MCP over HTTP 就是 JSON-RPC。實驗檔案在 <code>codelabs/labs/10-mcp/mcp_call.py</code>,它會自動取 token、送 JSON-RPC、解析回應(伺服器以 SSE 格式回傳)。</p>
+<h2 is-upgraded>列出工具</h2>
+<pre><code language="language-bash" class="language-bash">cd codelabs/labs/10-mcp
+python3 -I mcp_call.py cp __list__ | head
+python3 -I mcp_call.py obs __list__
+</code></pre>
+<h2 is-upgraded>它在底層做了什麼</h2>
+<pre><code language="language-bash" class="language-bash">TOKEN=...   # 上一節的 access_token
+
+curl -s -X POST http://api.openchoreo.localhost:8080/mcp \
+  -H &#34;Authorization: Bearer $TOKEN&#34; \
+  -H &#34;Content-Type: application/json&#34; \
+  -H &#34;Accept: application/json, text/event-stream&#34; \
+  -d &#39;{&#34;jsonrpc&#34;:&#34;2.0&#34;,&#34;id&#34;:1,&#34;method&#34;:&#34;tools/list&#34;}&#39;
+</code></pre>
+<table>
+<tr><td colspan="1" rowspan="1"><p>步驟</p>
+</td><td colspan="1" rowspan="1"><p>JSON-RPC <code>method</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>握手</p>
+</td><td colspan="1" rowspan="1"><p><code>initialize</code>(回報 <code>serverInfo</code>: <code>openchoreo-api</code>)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>探索工具</p>
+</td><td colspan="1" rowspan="1"><p><code>tools/list</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>呼叫工具</p>
+</td><td colspan="1" rowspan="1"><p><code>tools/call</code>,參數 <code>{"name": ..., "arguments": {...}}</code></p>
+</td></tr>
+</table>
+<p>Positive : 實測這個伺服器是<strong>無狀態</strong>的:<code>initialize</code> 沒有回傳 <code>Mcp-Session-Id</code>,不做握手也可以直接 <code>tools/list</code> 與 <code>tools/call</code>。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="讀取" duration="5">
+        <pre><code language="language-bash" class="language-bash">python3 -I mcp_call.py cp list_namespaces &#39;{}&#39;
+python3 -I mcp_call.py cp list_projects &#39;{&#34;namespace_name&#34;:&#34;default&#34;}&#39;
+</code></pre>
+<p>回傳的 <code>structuredContent</code> 是結構化 JSON,例如 <code>list_projects</code> 會給你每個專案的 <code>deploymentPipelineRef</code>、<code>latestRelease</code>、<code>status</code>。</p>
+<p>每個工具都有 JSON Schema。想知道參數,從 <code>tools/list</code> 的 <code>inputSchema</code> 看,AI 助理就是靠這份 schema 知道該怎麼呼叫的。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="查詢可觀測性資料" duration="6">
+        <p>第 7 課我們直接查 OpenSearch,因為 Observer 需要 token。現在有 token 了,可以走「正門」。</p>
+<p>查日誌(時間用 RFC3339,<code>namespace</code>、<code>start_time</code>、<code>end_time</code> 為必填):</p>
+<pre><code language="language-bash" class="language-bash">S=$(date -u -d &#39;-3 hours&#39; +%Y-%m-%dT%H:%M:%SZ)
+E=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+python3 -I mcp_call.py obs query_component_logs &#34;{
+  \&#34;namespace\&#34;:\&#34;default\&#34;,\&#34;project\&#34;:\&#34;default\&#34;,
+  \&#34;component\&#34;:\&#34;react-starter\&#34;,\&#34;environment\&#34;:\&#34;development\&#34;,
+  \&#34;start_time\&#34;:\&#34;$S\&#34;,\&#34;end_time\&#34;:\&#34;$E\&#34;,\&#34;limit\&#34;:3}&#34;
+</code></pre>
+<p>回傳的每筆日誌都附 <code>metadata</code>:<code>componentName</code>、<code>projectName</code>、<code>environmentName</code>、<code>podName</code>...。我們實測查到的,正是之前用 <code>curl</code> 打 <code>react-starter</code> 留下的 nginx 存取日誌。</p>
+<p>查資源指標:</p>
+<pre><code language="language-bash" class="language-bash">python3 -I mcp_call.py obs query_resource_metrics &#34;{
+  \&#34;namespace\&#34;:\&#34;default\&#34;,\&#34;project\&#34;:\&#34;default\&#34;,
+  \&#34;component\&#34;:\&#34;react-starter\&#34;,\&#34;environment\&#34;:\&#34;development\&#34;,
+  \&#34;start_time\&#34;:\&#34;$S\&#34;,\&#34;end_time\&#34;:\&#34;$E\&#34;,\&#34;step\&#34;:\&#34;30m\&#34;}&#34;
+</code></pre>
+<p>預期回傳 <code>cpuUsage</code>、<code>cpuRequests</code>、<code>cpuLimits</code>、<code>memoryUsage</code>... 的時間序列。</p>
+<p>Negative : 指標工具要求:提供 <code>component</code> 就必須同時提供 <code>project</code>,否則回 <code>project is required when component is provided</code>。AI 助理遇到這種錯誤通常會自己補上參數重試,但自己寫腳本時要注意。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="寫入:建立與刪除" duration="5">
+        <p>AI 也能改變平台狀態。用建立再刪除一個專案來看看:</p>
+<pre><code language="language-bash" class="language-bash">python3 -I mcp_call.py cp create_project \
+  &#39;{&#34;namespace_name&#34;:&#34;default&#34;,&#34;name&#34;:&#34;mcp-demo&#34;,&#34;display_name&#34;:&#34;MCP Demo&#34;,&#34;description&#34;:&#34;created via MCP&#34;}&#39;
+kubectl get project -n default
+
+python3 -I mcp_call.py cp delete_project \
+  &#39;{&#34;namespace_name&#34;:&#34;default&#34;,&#34;project_name&#34;:&#34;mcp-demo&#34;}&#39;
+kubectl get project -n default
+</code></pre>
+<p>預期第一次 <code>kubectl get project</code> 多出 <code>mcp-demo</code>,刪除後消失。</p>
+<p>Positive : 專案是用 <code>kubectl</code> 就能看到的真實 Kubernetes 資源。MCP 並沒有另一套資料庫,它只是控制平面 API 的另一個入口,所以 GitOps、稽核日誌、RBAC 全部照常運作。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="權限與安全" duration="5">
+        <p>AI 助理有能力刪除專案,這是好事也是風險。OpenChoreo 的做法:</p>
+<h2 is-upgraded>1. 同一套 RBAC</h2>
+<p>MCP 呼叫以 token 代表的身分授權,和你用 <code>occ</code> 或入口網站完全一樣。<code>service_mcp_client</code> 能做什麼,取決於綁在它身上的角色。</p>
+<h2 is-upgraded>2. 依權限過濾工具</h2>
+<p>預設 <code>filterByAuthz=true</code>:你<strong>沒有權限</strong>的工具不會出現在 <code>tools/list</code>,呼叫也會被拒絕。</p>
+<h2 is-upgraded>3. 縮小工具集</h2>
+<ul>
+<li>伺服器端用 <code>openchoreoApi.config.mcp.toolsets</code> 決定啟用哪些工具集(例如開發者版本不含 <code>pe</code>)</li>
+<li>連線時可用查詢參數 <code>?toolsets=namespace,project,component</code> 讓 AI 只看到部分工具</li>
+</ul>
+<p>Negative : <code>toolsets</code> 查詢參數只影響 <code>tools/list</code> 看到什麼,<strong>不會</strong>阻擋 <code>tools/call</code>。真正的防線是 RBAC 與伺服器端設定,不要把這個參數當成安全機制。</p>
+<h2 is-upgraded>4. 稽核</h2>
+<p>第 7 課啟用的稽核日誌(<code>query_audit_logs</code>)會記錄變更。</p>
+<h2 is-upgraded>實務建議</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>做法</p>
+</td><td colspan="1" rowspan="1"><p>理由</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>給 AI 專用的 OAuth 應用,不要共用你的帳號</p>
+</td><td colspan="1" rowspan="1"><p>稽核時分得出是誰</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>先給唯讀角色</p>
+</td><td colspan="1" rowspan="1"><p>排錯與分析就夠用了</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>需要寫入時,限定在特定 namespace/專案</p>
+</td><td colspan="1" rowspan="1"><p>縮小爆炸半徑</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>正式環境的變更仍走 GitOps/審核流程</p>
+</td><td colspan="1" rowspan="1"><p>AI 提案、人審核</p>
+</td></tr>
+</table>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="連接 AI 助理" duration="5">
+        <p>Negative : 以下設定整理自官方文件 <a href="https://openchoreo.dev/docs/ai/mcp-servers/" target="_blank">Configuring MCP Servers</a>,<strong>作者沒有在 AI 客戶端實測</strong>(會修改你的客戶端設定)。MCP 伺服器端的行為已用上一節的腳本驗證。</p>
+<h2 is-upgraded>方式 A:瀏覽器登入(建議)</h2>
+<p>使用 <code>user_mcp_client</code>(PKCE),以 <code>admin@openchoreo.dev</code> / <code>Admin@123</code> 登入:</p>
+<pre><code language="language-bash" class="language-bash">claude mcp add --transport http \
+  --client-id user_mcp_client --callback-port 8075 \
+  openchoreo-cp http://api.openchoreo.localhost:8080/mcp
+
+claude mcp add --transport http \
+  --client-id user_mcp_client --callback-port 8075 \
+  openchoreo-obs http://observer.openchoreo.localhost:11080/mcp
+</code></pre>
+<p>然後在 Claude Code 內執行 <code>/mcp</code>,選擇伺服器並在瀏覽器完成驗證。</p>
+<h2 is-upgraded>方式 B:Bearer token</h2>
+<pre><code language="language-bash" class="language-bash">claude mcp add --transport http \
+  openchoreo-cp http://api.openchoreo.localhost:8080/mcp \
+  --header &#34;Authorization: Bearer &lt;ACCESS_TOKEN&gt;&#34;
+</code></pre>
+<p>token 到期後要重新取得並更新設定。Cursor、Gemini CLI、Codex CLI、VS Code 的設定格式請見官方文件。</p>
+<h2 is-upgraded>試試這些提示</h2>
+<ul>
+<li>「列出 default namespace 的所有 Project 和 Component」</li>
+<li>「<code>react-starter</code> 在 development 最近 3 小時有沒有錯誤日誌?」</li>
+<li>「幫我把 <code>xxx</code> 從 development 晉升到 staging」(寫入操作,請先確認 AI 的計畫)</li>
+</ul>
+<p>官方 repo 的 <code>samples/mcp</code> 目錄提供更完整的情境練習:服務部署、日誌分析、建置失敗診斷、資源最佳化。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="內建 AI 代理人" duration="2">
+        <p>除了 MCP 伺服器,OpenChoreo 文件還提到三個內建功能:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>功能</p>
+</td><td colspan="1" rowspan="1"><p>說明</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>SRE Agent</strong></p>
+</td><td colspan="1" rowspan="1"><p>告警觸發時分析日誌、指標與追蹤,產出可能根因報告</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>FinOps Agent</strong></p>
+</td><td colspan="1" rowspan="1"><p>分析資源使用,提出降低成本的 rightsizing 建議</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Portal Assistant</strong></p>
+</td><td colspan="1" rowspan="1"><p>Backstage 內的唯讀對話助理</p>
+</td></tr>
+</table>
+<p>Negative : 這三個功能<strong>本課沒有安裝或測試</strong>。想嘗試請參考官方 <code>docs/ai/</code> 下的對應頁面。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="清理" duration="1">
+        <p>本課的寫入範例已經自行刪除專案。如果你在 AI 助理裡做了其他操作,請用 <code>kubectl get</code> 檢查並清理。若加了 MCP 伺服器到客戶端,可以移除:</p>
+<pre><code language="language-bash" class="language-bash">claude mcp remove openchoreo-cp
+claude mcp remove openchoreo-obs
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li>LLM 本身能直接查你的系統嗎?工具呼叫是怎麼運作的?</li>
+<li>Client Credentials 與 Authorization Code + PKCE 分別適合什麼情境?</li>
+<li><code>toolsets</code> 查詢參數是安全機制嗎?</li>
+<li>為什麼「AI 能讀日誌」和「AI 能改系統」最好分開授權?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>不能。AI 只是「請求呼叫某工具」,由外部程式執行並把結果回傳給它。</li>
+<li>前者適合腳本與自動化(程式用自己的帳密換 token);後者適合桌面 AI 助理(人在瀏覽器登入授權)。</li>
+<li>不是。它只影響 <code>tools/list</code> 看到什麼,不會阻擋 <code>tools/call</code>;真正的防線是 RBAC 與伺服器端設定。</li>
+<li>日誌可能含外部使用者控制的內容(提示注入),進入 AI 上下文後可能被當成指令;分開授權可限縮被誘導後的傷害。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="恭喜,全系列完成" duration="1">
+        <p>你已經:</p>
+<ul>
+<li>✅ 認識兩個 MCP 伺服器與它們的工具(130 與 17 個)</li>
+<li>✅ 用 Client Credentials 取得 token,直接說 MCP 協定</li>
+<li>✅ 完成讀取、查詢可觀測性資料、建立/刪除資源</li>
+<li>✅ 理解 RBAC、工具過濾與稽核如何限制 AI</li>
+</ul>
+<h2 is-upgraded>系列回顧</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>課</p>
+</td><td colspan="1" rowspan="1"><p>主題</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>01</p>
+</td><td colspan="1" rowspan="1"><p>本機安裝與初體驗</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>02</p>
+</td><td colspan="1" rowspan="1"><p>架構與核心概念</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>03</p>
+</td><td colspan="1" rowspan="1"><p>部署第一個 Component</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>04</p>
+</td><td colspan="1" rowspan="1"><p>從原始碼建置</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>05</p>
+</td><td colspan="1" rowspan="1"><p>多環境與 Promotion</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>06</p>
+</td><td colspan="1" rowspan="1"><p>GitOps</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>07</p>
+</td><td colspan="1" rowspan="1"><p>可觀測性</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>08</p>
+</td><td colspan="1" rowspan="1"><p>自訂 Golden Path</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>09</p>
+</td><td colspan="1" rowspan="1"><p>微服務實戰</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>10</p>
+</td><td colspan="1" rowspan="1"><p>AI 與 MCP</p>
+</td></tr>
+</table>
+<h2 is-upgraded>延伸閱讀</h2>
+<ul>
+<li><a href="https://openchoreo.dev/docs/ai/mcp-servers/" target="_blank">Configuring MCP Servers</a></li>
+<li><a href="https://openchoreo.dev/docs/reference/mcp-servers/" target="_blank">MCP Servers Reference</a></li>
+<li><a href="https://modelcontextprotocol.io/" target="_blank">Model Context Protocol</a></li>
+<li><a href="https://github.com/openchoreo/openchoreo/tree/release-v1.3/samples/mcp" target="_blank">OpenChoreo 範例:samples/mcp</a></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,569 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 08:平台工程師——自訂 Golden Path</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-08-golden-path"
+                  title="OpenChoreo 實戰 08:平台工程師——自訂 Golden Path"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <p>前面幾課我們都是「開發者」,直接使用平台提供的 <code>deployment/service</code>。這一課換成<strong>平台工程師</strong>:自己定義一個 ComponentType 和一個 Trait,讓開發者只要填幾個參數,就能得到符合團隊規範的部署。</p>
+<p>這就是 <strong>Golden Path(黃金路徑)</strong>:把最佳實務包成模板,走這條路最簡單,也最安全。</p>
+<h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成第 1 到 3 課、第 5 課更佳</li>
+<li>有 cluster-admin 權限(要建立叢集範圍的資源)</li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>ComponentType 的結構:schema、resources、validations</li>
+<li>如何用 CEL 運算式把參數變成 Kubernetes 資源</li>
+<li>Trait 的 <code>creates</code>:為元件附加能力</li>
+<li><code>parameters</code> 與 <code>environmentConfigs</code> 的差別</li>
+<li>驗證規則如何在違規時擋下部署</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:平台工程與黃金路徑" duration="10">
+        <h2 is-upgraded>平台是一個「產品」</h2>
+<p>平台團隊的客戶是公司內部的開發者。好的平台具備:</p>
+<ul>
+<li><strong>自助</strong>:開發者不需要開工單等人</li>
+<li><strong>預設正確</strong>:不用做任何事,結果就是安全、合規的</li>
+<li><strong>可逃生</strong>:需要特殊需求時,有受控的方式偏離</li>
+</ul>
+<h2 is-upgraded>黃金路徑 vs 黃金牢籠</h2>
+<table>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>黃金路徑(Golden Path)</p>
+</td><td colspan="1" rowspan="1"><p>黃金牢籠(Golden Cage)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>態度</p>
+</td><td colspan="1" rowspan="1"><p>這條路最好走,但你可以選別條</p>
+</td><td colspan="1" rowspan="1"><p>只能走這一條</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>結果</p>
+</td><td colspan="1" rowspan="1"><p>開發者自願使用</p>
+</td><td colspan="1" rowspan="1"><p>開發者想辦法繞過</p>
+</td></tr>
+</table>
+<p>OpenChoreo 的做法是提供模板(ComponentType)讓大部分情況一鍵搞定,同時用 <code>allowedTraits</code> 等欄位<strong>限定</strong>可附加的能力,在自由與控管之間取得平衡。</p>
+<h2 is-upgraded>護欄(Guardrails)</h2>
+<p>「護欄」是阻止你掉下懸崖、但不阻礙你前進的東西。對應到平台:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>護欄</p>
+</td><td colspan="1" rowspan="1"><p>實現方式</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>必須提供負責團隊</p>
+</td><td colspan="1" rowspan="1"><p>schema 的 <code>required</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>數值範圍合理</p>
+</td><td colspan="1" rowspan="1"><p>schema 的 <code>minimum</code>、<code>enum</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>不能對外暴露</p>
+</td><td colspan="1" rowspan="1"><p><code>validations</code> 規則</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>只能用核准的附加能力</p>
+</td><td colspan="1" rowspan="1"><p><code>allowedTraits</code></p>
+</td></tr>
+</table>
+<p>這種「把規則寫成機器可檢查的程式碼」的做法,通稱 <strong>策略即程式碼(policy as code)</strong>。</p>
+<h2 is-upgraded>三個技術基礎</h2>
+<p><strong>1. OpenAPI / JSON Schema(定義輸入的形狀)</strong></p>
+<p><code>parameters.openAPIV3Schema</code> 用 JSON Schema 描述「開發者可以填什麼、型別、預設值、必填與否」。Kubernetes 的 CRD 也用同一套語言,所以驗證是在資源被接受時就做的。</p>
+<p><strong>2. CEL(Common Expression Language)</strong></p>
+<p>Google 設計的小型表達式語言,語法像 C 或 JavaScript 的運算式,特色是<strong>安全、不會無限迴圈、不能有副作用</strong>。Kubernetes 本身也用它(例如 ValidatingAdmissionPolicy)。在 OpenChoreo 裡,<code>${...}</code> 包起來的就是 CEL:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>寫法</p>
+</td><td colspan="1" rowspan="1"><p>意思</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>${parameters.team}</code></p>
+</td><td colspan="1" rowspan="1"><p>讀取參數</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>${size(workload.endpoints) > 0}</code></p>
+</td><td colspan="1" rowspan="1"><p>條件判斷,可用於 <code>includeWhen</code> 與 <code>validations</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>${has(x) ? x : oc_omit()}</code></p>
+</td><td colspan="1" rowspan="1"><p>有值才填,沒有就省略欄位</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>forEach</code></p>
+</td><td colspan="1" rowspan="1"><p>對每個端點各產生一份資源</p>
+</td></tr>
+</table>
+<p><strong>3. 模板化</strong></p>
+<p>ComponentType 是一個「資源模板」:把輸入(參數、Workload)代進去,輸出一組 Kubernetes 資源。</p>
+<h2 is-upgraded>Trait:組合優於繼承</h2>
+<p>假設有 4 種元件類型、5 種附加能力(自動擴縮、健康檢查...)。如果每個組合都做成一個 ComponentType,要寫 4 × 2⁵ 種。<strong>Trait</strong> 讓能力獨立存在,需要時才附加到元件上,這就是「組合優於繼承」的設計原則。</p>
+<h2 is-upgraded>本課會用到的兩個 Kubernetes 概念</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>資源</p>
+</td><td colspan="1" rowspan="1"><p>白話解釋</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>HorizontalPodAutoscaler(HPA)</strong></p>
+</td><td colspan="1" rowspan="1"><p>依 CPU 等指標自動增減副本數</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>PodDisruptionBudget(PDB)</strong></p>
+</td><td colspan="1" rowspan="1"><p>規定在「自願性中斷」(例如節點維護、升級)時,至少要保留幾個 Pod 在線,避免一次全部下線</p>
+</td></tr>
+</table>
+<h2 is-upgraded>誰負責什麼?</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>角色</p>
+</td><td colspan="1" rowspan="1"><p>寫什麼</p>
+</td><td colspan="1" rowspan="1"><p>在乎什麼</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>平台工程師</p>
+</td><td colspan="1" rowspan="1"><p>ComponentType、Trait、Workflow、Environment</p>
+</td><td colspan="1" rowspan="1"><p>安全、合規、一致性、成本</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>開發者</p>
+</td><td colspan="1" rowspan="1"><p>Component、Workload</p>
+</td><td colspan="1" rowspan="1"><p>功能、速度</p>
+</td></tr>
+</table>
+<p>這個分工的美妙之處:平台工程師寫一次規則,所有開發者自動受益;開發者專心在業務,不必記規範。</p>
+<p>接下來你要扮演平台工程師。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="讀懂內建的 ComponentType" duration="6">
+        <p>最好的教材就是現成的範本:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get clustercomponenttype
+kubectl get clustertrait
+kubectl get clustercomponenttype service -o yaml
+</code></pre>
+<p>預設有四種 ComponentType(<code>service</code>、<code>web-application</code>、<code>worker</code>、<code>scheduled-task</code>)與五種 Trait(<code>health-probes</code>、<code>horizontal-pod-autoscaler</code>、<code>observability-alert-rule</code>、<code>persistent-volume-claim</code>、<code>vertical-pod-autoscaler</code>)。</p>
+<p><code>service</code> 的骨架可以濃縮成:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>區塊</p>
+</td><td colspan="1" rowspan="1"><p>作用</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>workloadType</code></p>
+</td><td colspan="1" rowspan="1"><p>底層 Kubernetes 工作負載種類(<code>deployment</code>、<code>cronjob</code>)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>allowedTraits</code></p>
+</td><td colspan="1" rowspan="1"><p>這個類型允許附加哪些 Trait</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>allowedWorkflows</code></p>
+</td><td colspan="1" rowspan="1"><p>允許使用哪些建置流程(第 4 課)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>environmentConfigs</code></p>
+</td><td colspan="1" rowspan="1"><p>每個環境可以覆寫的參數 schema</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>resources</code></p>
+</td><td colspan="1" rowspan="1"><p>要產生的資源模板(Deployment、Service、HTTPRoute...)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>validations</code></p>
+</td><td colspan="1" rowspan="1"><p>部署前必須通過的規則</p>
+</td></tr>
+</table>
+<h2 is-upgraded>模板裡的變數</h2>
+<p><code>resources[].template</code> 內的 <code>${...}</code> 是 <strong>CEL 運算式</strong>,常用變數:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>變數</p>
+</td><td colspan="1" rowspan="1"><p>內容</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>metadata.name</code> / <code>metadata.namespace</code></p>
+</td><td colspan="1" rowspan="1"><p>產生資源的名稱與 namespace</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>metadata.componentName</code> / <code>metadata.labels</code> / <code>metadata.podSelectors</code></p>
+</td><td colspan="1" rowspan="1"><p>元件名稱、標準標籤、Pod selector</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>parameters.*</code></p>
+</td><td colspan="1" rowspan="1"><p>Component 層級的參數(跨環境一致)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>environmentConfigs.*</code></p>
+</td><td colspan="1" rowspan="1"><p>環境層級的參數(來自 ReleaseBinding)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>workload.*</code></p>
+</td><td colspan="1" rowspan="1"><p>開發者寫的 Workload(image、endpoints...)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>gateway.*</code> / <code>dataplane.*</code></p>
+</td><td colspan="1" rowspan="1"><p>平台提供的閘道與資料平面資訊</p>
+</td></tr>
+</table>
+<p>另外還有 <code>includeWhen</code>(條件產生)、<code>forEach</code>(迭代產生多個資源)、<code>oc_omit()</code>(省略欄位)、<code>oc_merge()</code>(合併 map)等輔助函式。</p>
+<p>Positive : 第 2 課說過的「參數 vs 環境設定」在這裡有了具體樣貌:<code>parameters</code> 寫在 Component 上,<code>environmentConfigs</code> 寫在 ReleaseBinding 上。ComponentType 負責宣告兩者的 schema。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="設計我們的 Golden Path" duration="3">
+        <p>情境:公司有許多<strong>內部服務</strong>,規範是:</p>
+<ol type="1">
+<li>絕對不能對外暴露(不產生外部路由)</li>
+<li>每個服務必須標註負責團隊(<code>team</code> 標籤)</li>
+<li>副本數與日誌等級可以依環境調整</li>
+<li>可以附加 PodDisruptionBudget</li>
+</ol>
+<p>我們建立 <code>internal-service</code> 這個 ComponentType,以及 <code>pod-disruption-budget</code> 這個 Trait。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="撰寫 ComponentType" duration="8">
+        <p><code>internal-service.yaml</code>:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterComponentType
+metadata:
+  name: internal-service
+  annotations:
+    openchoreo.dev/description: 只在叢集內提供服務的元件,不產生外部路由,並強制標註負責團隊
+spec:
+  workloadType: deployment
+  allowedTraits:
+    - kind: ClusterTrait
+      name: horizontal-pod-autoscaler
+    - kind: ClusterTrait
+      name: pod-disruption-budget
+  parameters:
+    openAPIV3Schema:
+      type: object
+      required: [team]
+      properties:
+        team:
+          type: string
+          description: 負責這個服務的團隊,會成為 Pod 的 team 標籤
+  environmentConfigs:
+    openAPIV3Schema:
+      type: object
+      properties:
+        replicas:
+          type: integer
+          default: 1
+          minimum: 1
+        logLevel:
+          type: string
+          default: info
+          enum: [debug, info, warn, error]
+  validations:
+    - rule: ${size(workload.endpoints) &gt; 0}
+      message: internal-service 至少需要一個端點
+    - rule: ${!workload.endpoints.exists(name, ep, &#34;external&#34; in ep.visibility)}
+      message: internal-service 不允許 external 端點,請改用 deployment/service
+  resources:
+    - id: deployment
+      targetPlane: dataplane
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: ${metadata.name}
+          namespace: ${metadata.namespace}
+          labels: &#39;${oc_merge(metadata.labels, {&#34;team&#34;: parameters.team})}&#39;
+        spec:
+          replicas: ${environmentConfigs.replicas}
+          selector:
+            matchLabels: ${metadata.podSelectors}
+          template:
+            metadata:
+              labels: &#39;${oc_merge(metadata.podSelectors, {&#34;team&#34;: parameters.team})}&#39;
+            spec:
+              containers:
+                - name: main
+                  image: ${workload.container.image}
+                  command: &#39;${has(workload.container.command) ? workload.container.command : oc_omit()}&#39;
+                  args: &#39;${has(workload.container.args) ? workload.container.args : oc_omit()}&#39;
+                  env: &#39;${[{&#34;name&#34;: &#34;LOG_LEVEL&#34;, &#34;value&#34;: environmentConfigs.logLevel}]}&#39;
+    - id: service
+      targetPlane: dataplane
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: ${metadata.componentName}
+          namespace: ${metadata.namespace}
+          labels: ${metadata.labels}
+        spec:
+          type: ClusterIP
+          ports: ${workload.toServicePorts()}
+          selector: ${metadata.podSelectors}
+</code></pre>
+<h2 is-upgraded>重點解說</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>片段</p>
+</td><td colspan="1" rowspan="1"><p>意義</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>parameters.required: [team]</code></p>
+</td><td colspan="1" rowspan="1"><p>開發者<strong>必須</strong>提供 <code>team</code>,否則無法建立</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>environmentConfigs</code></p>
+</td><td colspan="1" rowspan="1"><p><code>replicas</code> 與 <code>logLevel</code> 可在每個環境各自設定,並有預設值與限制</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>validations</code></p>
+</td><td colspan="1" rowspan="1"><p>兩條規則,違規時整個部署被擋下並顯示訊息</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>resources</code> 只有 Deployment 與 Service</p>
+</td><td colspan="1" rowspan="1"><p><strong>沒有 HTTPRoute</strong>,所以天生不會對外</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>oc_merge(metadata.labels, {"team": ...})</code></p>
+</td><td colspan="1" rowspan="1"><p>把標準標籤與 <code>team</code> 合併</p>
+</td></tr>
+</table>
+<p>Negative : <strong>YAML 引號陷阱。</strong> 運算式裡只要出現 <code>": "</code>(例如 <code>{"team": parameters.team}</code>),整個值就必須用單引號包起來,否則 YAML 解析會失敗:<code>mapping values are not allowed in this context</code>。內建範本也是這樣寫。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="撰寫 Trait" duration="5">
+        <p>Trait 用 <code>creates</code> 附加資源。<code>pdb.yaml</code>:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterTrait
+metadata:
+  name: pod-disruption-budget
+  annotations:
+    openchoreo.dev/description: 為元件建立 PodDisruptionBudget,避免維護時同時下線過多 Pod
+spec:
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        minAvailable:
+          type: integer
+          default: 1
+          minimum: 0
+  creates:
+    - targetPlane: dataplane
+      template:
+        apiVersion: policy/v1
+        kind: PodDisruptionBudget
+        metadata:
+          name: ${metadata.name}-${trait.instanceName}
+          namespace: ${metadata.namespace}
+          labels: ${metadata.labels}
+        spec:
+          minAvailable: ${parameters.minAvailable}
+          selector:
+            matchLabels: ${metadata.podSelectors}
+</code></pre>
+<p>Trait 可以用 <code>trait.instanceName</code> 區分同一個元件上的多個實例,所以名稱是 <code>${metadata.name}-${trait.instanceName}</code>。</p>
+<p>套用兩者:</p>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f internal-service.yaml -f pdb.yaml
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="以開發者身分使用" duration="6">
+        <p>開發者只需要寫:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: ledger
+  namespace: default
+spec:
+  owner:
+    projectName: default
+  autoDeploy: true
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/internal-service
+  parameters:
+    team: payments
+  traits:
+    - kind: ClusterTrait
+      name: pod-disruption-budget
+      instanceName: pdb
+      parameters:
+        minAvailable: 1
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: ledger-workload
+  namespace: default
+spec:
+  owner:
+    componentName: ledger
+    projectName: default
+  endpoints:
+    http:
+      type: HTTP
+      port: 9090
+      visibility: [project]
+  container:
+    image: &#34;ghcr.io/openchoreo/samples/greeter-service:latest&#34;
+    command: [&#34;./go-greeter&#34;]
+    args: [&#34;--port&#34;, &#34;9090&#34;]
+</code></pre>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f component.yaml
+kubectl get component ledger -n default \
+  -o jsonpath=&#39;{range .status.conditions[*]}{.type}={.status} {.message}{&#34;\n&#34;}{end}&#39;
+</code></pre>
+<p>預期 <code>Ready=True</code>。看看平台替你產生了什麼:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get deploy,svc,pdb,httproute -A -l openchoreo.dev/component=ledger
+</code></pre>
+<p>預期有 Deployment、Service、PodDisruptionBudget,<strong>沒有 HTTPRoute</strong>。</p>
+<p>驗證標籤與環境變數:</p>
+<pre><code language="language-bash" class="language-bash">NS=$(kubectl get ns -o name | grep dp-default-default-development | cut -d/ -f2)
+kubectl get deploy -n $NS -l openchoreo.dev/component=ledger \
+  -o jsonpath=&#39;{.items[0].metadata.labels.team} {.items[0].spec.template.spec.containers[0].env}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>預期 <code>payments [{"name":"LOG_LEVEL","value":"info"}]</code>。</p>
+<p>Positive : 開發者完全沒寫 Deployment、Service 或 PDB。他只回答了「誰負責(team)」和「要不要 PDB」,其餘全由平台決定。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="環境覆寫" duration="4">
+        <p><code>replicas</code> 與 <code>logLevel</code> 是 <code>environmentConfigs</code>,所以改的是 ReleaseBinding,不是 Component:</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch releasebinding ledger-development -n default --type merge \
+  -p &#39;{&#34;spec&#34;:{&#34;componentTypeEnvironmentConfigs&#34;:{&#34;replicas&#34;:2,&#34;logLevel&#34;:&#34;debug&#34;}}}&#39;
+sleep 8
+kubectl get deploy -n $NS -l openchoreo.dev/component=ledger \
+  -o jsonpath=&#39;{.items[0].spec.replicas} {.items[0].spec.template.spec.containers[0].env}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>預期 <code>2 [{"name":"LOG_LEVEL","value":"debug"}]</code>。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="護欄:驗證規則" duration="6">
+        <h2 is-upgraded>試圖對外暴露</h2>
+<p>把端點可見度改成 <code>external</code>:</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch workload ledger-workload -n default --type json \
+  -p &#39;[{&#34;op&#34;:&#34;replace&#34;,&#34;path&#34;:&#34;/spec/endpoints/http/visibility&#34;,&#34;value&#34;:[&#34;external&#34;]}]&#39;
+sleep 12
+kubectl get releasebinding ledger-development -n default \
+  -o jsonpath=&#39;{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{&#34;\n&#34;}{end}&#39;
+</code></pre>
+<p>你會看到:</p>
+<pre><code>ReleaseSynced=False RenderingFailed: Failed to render resources: component type validation failed:
+rule[1] &#34;${!workload.endpoints.exists(...)}&#34; evaluated to false: internal-service 不允許 external 端點,請改用 deployment/service
+</code></pre>
+<p>Positive : 違規的變更<strong>不會</strong>被部署,已經在跑的資源維持原狀。錯誤訊息就是你在 <code>validations[].message</code> 寫的文字,所以訊息要寫成能告訴開發者「該怎麼辦」。</p>
+<p>Negative : 注意 <code>kubectl apply</code> 本身<strong>不會</strong>失敗,Component 的 <code>Ready</code> 也仍是 <code>True</code>。驗證失敗是反映在 <strong>ReleaseBinding</strong> 的 <code>ReleaseSynced</code> / <code>Ready</code> 條件上。排錯時請看 ReleaseBinding,不要只看 Component。</p>
+<p>改回去:</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch workload ledger-workload -n default --type json \
+  -p &#39;[{&#34;op&#34;:&#34;replace&#34;,&#34;path&#34;:&#34;/spec/endpoints/http/visibility&#34;,&#34;value&#34;:[&#34;project&#34;]}]&#39;
+</code></pre>
+<h2 is-upgraded>缺少必填參數</h2>
+<p>這種錯誤比較早被攔下,在建立 ComponentRelease 時由 admission webhook 拒絕:</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch component ledger -n default --type json -p &#39;[{&#34;op&#34;:&#34;remove&#34;,&#34;path&#34;:&#34;/spec/parameters&#34;}]&#39;
+kubectl get component ledger -n default -o jsonpath=&#39;{.status.conditions[*].message}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>預期訊息結尾是 <code>parameters do not match ComponentType schema: .team is required</code>。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="使用內建 Trait" duration="4">
+        <p><code>internal-service</code> 的 <code>allowedTraits</code> 也列了內建的 <code>horizontal-pod-autoscaler</code>。把參數補回去,並附加 HPA:</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch component ledger -n default --type merge -p &#39;{
+  &#34;spec&#34;:{&#34;parameters&#34;:{&#34;team&#34;:&#34;payments&#34;},
+  &#34;traits&#34;:[
+    {&#34;kind&#34;:&#34;ClusterTrait&#34;,&#34;name&#34;:&#34;pod-disruption-budget&#34;,&#34;instanceName&#34;:&#34;pdb&#34;,&#34;parameters&#34;:{&#34;minAvailable&#34;:1}},
+    {&#34;kind&#34;:&#34;ClusterTrait&#34;,&#34;name&#34;:&#34;horizontal-pod-autoscaler&#34;,&#34;instanceName&#34;:&#34;hpa&#34;,&#34;parameters&#34;:{&#34;replicas&#34;:{&#34;min&#34;:1,&#34;max&#34;:3}}}
+  ]}}&#39;
+sleep 12
+kubectl get hpa,pdb -A | grep ledger
+</code></pre>
+<p>預期同時看到 HPA(1 到 3 個副本、CPU 80%)與 PDB。</p>
+<p>Negative : 刻意不放進 <code>allowedTraits</code> 的 Trait 不能使用,這是平台工程師限制開發者可用能力的方式。本課沒有實測「使用不在白名單的 Trait」會得到什麼錯誤。HPA 顯示 <code>cpu: <unknown>/80%</code> 只是剛建立、metrics 尚未就緒,稍後會有數值。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="清理" duration="1">
+        <pre><code language="language-bash" class="language-bash">kubectl delete component ledger -n default
+kubectl delete workload ledger-workload -n default --ignore-not-found
+kubectl delete clustercomponenttype internal-service
+kubectl delete clustertrait pod-disruption-budget
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li><code>parameters</code> 與 <code>environmentConfigs</code> 有何不同?</li>
+<li>驗證規則違規時,錯誤出現在哪裡?</li>
+<li>為什麼要有 Trait,而不是為每種組合做一個 ComponentType?</li>
+<li>CEL 運算式裡出現 <code>": "</code> 時 YAML 要注意什麼?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>parameters 寫在 Component 上、跨環境一致;environmentConfigs 在 ReleaseBinding 上設定、每個環境可不同。</li>
+<li>出現在 ReleaseBinding 的條件(<code>ReleaseSynced=False</code>、<code>RenderingFailed</code>),Component 本身仍可能是 Ready,且已部署的資源不變。</li>
+<li>組合優於繼承:能力獨立存在、按需附加,避免組合數量爆炸。</li>
+<li>整個值要用單引號包起來,否則會出現 <code>mapping values are not allowed</code>。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="恭喜與下一步" duration="1">
+        <p>你已經:</p>
+<ul>
+<li>✅ 讀懂內建 ComponentType 與 Trait 的結構</li>
+<li>✅ 寫出自己的 <code>internal-service</code> ComponentType 與 <code>pod-disruption-budget</code> Trait</li>
+<li>✅ 驗證了必填參數、環境覆寫與驗證規則三道護欄</li>
+<li>✅ 理解平台工程師與開發者的分工</li>
+</ul>
+<h2 is-upgraded>重點整理</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>概念</p>
+</td><td colspan="1" rowspan="1"><p>一句話</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>ComponentType</p>
+</td><td colspan="1" rowspan="1"><p>把「一個元件長什麼樣」寫成模板</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Trait</p>
+</td><td colspan="1" rowspan="1"><p>可重複附加的能力</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>parameters / environmentConfigs</p>
+</td><td colspan="1" rowspan="1"><p>元件層級與環境層級的輸入</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>validations</p>
+</td><td colspan="1" rowspan="1"><p>違規就不部署的護欄</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>allowedTraits</p>
+</td><td colspan="1" rowspan="1"><p>限制開發者可用的能力</p>
+</td></tr>
+</table>
+<h2 is-upgraded>延伸閱讀</h2>
+<ul>
+<li><a href="https://openchoreo.dev/docs/" target="_blank">OpenChoreo 文件</a></li>
+<li><a href="https://github.com/google/cel-spec" target="_blank">CEL 語言規格</a></li>
+</ul>
+<h2 is-upgraded>下一課</h2>
+<p><strong>09:微服務實戰</strong> — 部署官方的多服務範例,練習依賴與排錯。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

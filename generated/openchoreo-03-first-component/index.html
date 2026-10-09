@@ -1,0 +1,383 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 03:部署你的第一個 Component</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-03-first-component"
+                  title="OpenChoreo 實戰 03:部署你的第一個 Component"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成第 1、2 課,OpenChoreo 運行中</li>
+<li><code>kubectl</code> 能連到叢集</li>
+<li>本機有 <code>curl</code></li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>安裝並登入 <code>occ</code> CLI</li>
+<li>撰寫 Component 與 Workload 的 YAML</li>
+<li>部署一個預建映像(不需要建置)</li>
+<li>沿著 Component → ComponentRelease → ReleaseBinding → Kubernetes 資源追蹤部署</li>
+<li>透過閘道呼叫服務</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:從 Workload 到 Kubernetes 資源" duration="8">
+        <p>寫 YAML 之前,先搞清楚「我寫的東西」和「叢集裡真正跑的東西」是什麼關係。</p>
+<h2 is-upgraded>YAML 的基本結構</h2>
+<p>所有 Kubernetes 風格的資源,都有相同的四個頂層欄位:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1   # 這個資源屬於哪個 API 與版本
+kind: Component                       # 資源的種類
+metadata:                             # 名稱、namespace、標籤等識別資訊
+  name: my-greeter
+spec:                                 # 你「期望」的內容
+  ...
+</code></pre>
+<p><code>status</code> 欄位則是控制器寫回來的<strong>實際狀態</strong>(你不用寫)。看到 <code>.status.conditions</code> 就是在讀它。</p>
+<h2 is-upgraded>為什麼把 Component 和 Workload 分開?</h2>
+<p>這是 OpenChoreo 的核心設計之一:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>資源</p>
+</td><td colspan="1" rowspan="1"><p>回答的問題</p>
+</td><td colspan="1" rowspan="1"><p>誰關心</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Component</strong></p>
+</td><td colspan="1" rowspan="1"><p>「這是什麼類型的東西?要怎麼被平台管理?」(what / how)</p>
+</td><td colspan="1" rowspan="1"><p>平台與開發者共同</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Workload</strong></p>
+</td><td colspan="1" rowspan="1"><p>「我的程式需要什麼才能跑?」(要什麼映像、開哪個埠、依賴誰)</p>
+</td><td colspan="1" rowspan="1"><p>開發者</p>
+</td></tr>
+</table>
+<p>Workload 只描述<strong>需求</strong>,不描述 Kubernetes 怎麼滿足。同一份 Workload,平台可以用不同的 ComponentType(模板)翻譯成不同的 Kubernetes 資源。</p>
+<h2 is-upgraded>平台怎麼把它變成真正的資源</h2>
+<pre><code>Workload(你寫的需求)  ┐
+Component 的參數       ├──▶ ComponentType(平台寫的模板) ──▶ Deployment
+環境設定(ReleaseBinding)┘                                   Service
+                                                            HTTPRoute ...
+</code></pre>
+<p><strong>ComponentType 像是一個「食譜」</strong>:你提供食材(映像、埠、參數),食譜決定怎麼烹調(產生哪些資源、用什麼預設值)。所以你寫 30 行,平台能產生上百行的 Kubernetes 設定。這就是第 8 課要自己動手寫的東西。</p>
+<h2 is-upgraded>流量怎麼進來:Gateway API</h2>
+<p>要讓外部連到服務,Kubernetes 需要「路由」。<code>Ingress</code> 是舊的標準,<strong>Gateway API</strong> 是新一代標準,OpenChoreo 用的是它。你會看到:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>資源</p>
+</td><td colspan="1" rowspan="1"><p>角色</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Gateway</strong></p>
+</td><td colspan="1" rowspan="1"><p>流量入口(像大樓大門),由平台管理</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>HTTPRoute</strong></p>
+</td><td colspan="1" rowspan="1"><p>路由規則:「某個主機名稱與路徑,轉到哪個 Service」</p>
+</td></tr>
+</table>
+<p>所以呼叫網址 <code>http://development-default.openchoreoapis.localhost:19080/my-greeter-http/greeter/greet</code> 可以拆成:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>片段</p>
+</td><td colspan="1" rowspan="1"><p>意義</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>development-default</code></p>
+</td><td colspan="1" rowspan="1"><p>環境名稱 + namespace(用來區分主機名)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>.openchoreoapis.localhost</code></p>
+</td><td colspan="1" rowspan="1"><p>閘道的網域</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>:19080</code></p>
+</td><td colspan="1" rowspan="1"><p>本機閘道對外的 port</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>/my-greeter-http</code></p>
+</td><td colspan="1" rowspan="1"><p>路徑前綴:元件名 + 端點名,HTTPRoute 依此比對</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>/greeter/greet</code></p>
+</td><td colspan="1" rowspan="1"><p>真正送給你應用程式的路徑(前綴會被剝掉)</p>
+</td></tr>
+</table>
+<h2 is-upgraded>端點的可見度(visibility)</h2>
+<p>Workload 的每個端點都要宣告誰看得到它:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>值</p>
+</td><td colspan="1" rowspan="1"><p>意義</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>external</code></p>
+</td><td colspan="1" rowspan="1"><p>經閘道對叢集外開放</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>project</code>(第 9 課實測)</p>
+</td><td colspan="1" rowspan="1"><p>只有同一個 Project 內的元件能連</p>
+</td></tr>
+</table>
+<p><strong>預設不對外</strong>是比較安全的設計,你必須明確寫出 <code>external</code> 才會產生對外路由。</p>
+<h2 is-upgraded><code>autoDeploy</code> 的意思</h2>
+<p><code>autoDeploy: true</code> 表示:Component 一建立或變更,平台就自動產生 Release 並部署到管線的<strong>第一個環境</strong>。第 5 課會說明 Release 是什麼。</p>
+<h2 is-upgraded>kubectl 與 occ 的分工</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>工具</p>
+</td><td colspan="1" rowspan="1"><p>定位</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>kubectl</code></p>
+</td><td colspan="1" rowspan="1"><p>通用:所有 Kubernetes 資源都能操作,本系列主要用它,因為最透明</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>occ</code></p>
+</td><td colspan="1" rowspan="1"><p>OpenChoreo 專用:語意更高階(例如 <code>component deploy --to staging</code>),需要登入</p>
+</td></tr>
+</table>
+<p>下面開始動手。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="安裝 occ CLI" duration="4">
+        <p>Linux x64(其他平台請見<a href="https://openchoreo.dev/docs/getting-started/cli-installation/" target="_blank">官方頁面</a>):</p>
+<pre><code language="language-bash" class="language-bash">curl -L https://github.com/openchoreo/openchoreo/releases/download/v1.3.1/occ_v1.3.1_linux_amd64.tar.gz | tar -xz &amp;&amp; sudo mv occ /usr/local/bin/
+occ version
+</code></pre>
+<h2 is-upgraded>設定 Control Plane 位址</h2>
+<p>本機 k3d 的位址是 <code>http://api.openchoreo.localhost:8080</code>:</p>
+<pre><code language="language-bash" class="language-bash">occ config controlplane update default --url http://api.openchoreo.localhost:8080
+</code></pre>
+<p>在 <code>/etc/hosts</code> 加入(若主機尚未解析 <code>*.localhost</code>):</p>
+<pre><code>127.0.0.1       api.openchoreo.localhost
+127.0.0.1       thunder.openchoreo.localhost
+127.0.0.1       observer.openchoreo.localhost
+</code></pre>
+<h2 is-upgraded>登入</h2>
+<pre><code language="language-bash" class="language-bash">occ login
+</code></pre>
+<p>會開啟瀏覽器,使用 <code>admin@openchoreo.dev</code> / <code>Admin@123</code>。成功後試試:</p>
+<pre><code language="language-bash" class="language-bash">occ namespace list
+occ project list -n default
+occ component list -n default
+</code></pre>
+<p>Negative : 若你的叢集用自簽 TLS 憑證(非本機 k3d 預設),需先信任 CA,步驟見官方 CLI 安裝頁。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="撰寫 YAML" duration="6">
+        <p>建立 <code>my-greeter.yaml</code>,內含 Component 與 Workload 兩個文件:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: my-greeter
+  namespace: default
+spec:
+  owner:
+    projectName: default
+  autoDeploy: true
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: my-greeter-workload
+  namespace: default
+spec:
+  owner:
+    componentName: my-greeter
+    projectName: default
+  endpoints:
+    http:
+      type: HTTP
+      port: 9090
+      visibility: [external]
+  container:
+    image: &#34;ghcr.io/openchoreo/samples/greeter-service:latest&#34;
+    command:
+      - ./go-greeter
+    args:
+      - --port
+      - &#34;9090&#34;
+    env:
+      - key: LOG_LEVEL
+        value: &#34;info&#34;
+</code></pre>
+<h2 is-upgraded>逐欄解讀</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>欄位</p>
+</td><td colspan="1" rowspan="1"><p>意義</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.owner.projectName</code></p>
+</td><td colspan="1" rowspan="1"><p>Component 屬於哪個 Project</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>autoDeploy: true</code></p>
+</td><td colspan="1" rowspan="1"><p>建立後自動部署到第一個環境</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>componentType</code></p>
+</td><td colspan="1" rowspan="1"><p>用平台提供的 <code>deployment/service</code> 模板;<code>kind</code> 預設是 <code>ComponentType</code>,內建類型要明確寫 <code>ClusterComponentType</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>Workload.spec.owner</code></p>
+</td><td colspan="1" rowspan="1"><p>這個 Workload 屬於哪個 Component</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>endpoints.http</code></p>
+</td><td colspan="1" rowspan="1"><p>宣告一個 HTTP 端點,port 9090,<code>visibility: [external]</code> 代表經閘道對外</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>container</code></p>
+</td><td colspan="1" rowspan="1"><p>映像、指令、參數與環境變數</p>
+</td></tr>
+</table>
+<p>Positive : 官方範例 <code>greeter-service.yaml</code> 另外包含一個 <code>SecretReference</code>,用來注入 <code>GITHUB_TOKEN</code>。本課為了不依賴外部密鑰庫,刻意拿掉它。若服務啟動失敗,請先對照官方範例。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="部署並追蹤" duration="8">
+        <h2 is-upgraded>套用</h2>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f my-greeter.yaml
+kubectl wait --for=condition=Ready component/my-greeter -n default --timeout=120s
+</code></pre>
+<p>也可以用 <code>occ</code> 確認:</p>
+<pre><code language="language-bash" class="language-bash">occ component list --namespace default --project default
+occ component get my-greeter --namespace default
+</code></pre>
+<h2 is-upgraded>追蹤 Release</h2>
+<p>Component 的變更會產生不可變的 ComponentRelease:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get component my-greeter -n default -o jsonpath=&#39;{.status.latestRelease.name}&#39;
+kubectl get componentrelease -n default
+</code></pre>
+<p>名稱尾碼是 Release spec 的雜湊值,你的結果會不同。</p>
+<h2 is-upgraded>查看 development 環境的 ReleaseBinding</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get releasebinding my-greeter-development -n default
+</code></pre>
+<p>這就是第 2 課說的「把 Release 釘在某個環境」。</p>
+<h2 is-upgraded>查看 Data Plane 上真正的資源</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get deployment,svc,httproute -A -l openchoreo.dev/component=my-greeter
+</code></pre>
+<p>這些資源位於類似 <code>dp-default-default-development-*</code> 的 namespace,而不是 <code>default</code>。</p>
+<p>Positive : 你只寫了約 30 行 YAML,平台根據 <code>deployment/service</code> 這個 ComponentType 幫你生出 Deployment、Service 與 HTTPRoute。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="呼叫服務" duration="3">
+        <p>閘道網址格式:</p>
+<pre><code>http://{environment}-{namespace}.{gateway-host}/{endpoint-name}/{path}
+</code></pre>
+<p>本機 Dev Container 的閘道在 19080:</p>
+<pre><code language="language-bash" class="language-bash">curl http://development-default.openchoreoapis.localhost:19080/my-greeter-http/greeter/greet
+curl &#34;http://development-default.openchoreoapis.localhost:19080/my-greeter-http/greeter/greet?name=OpenChoreo&#34;
+</code></pre>
+<p>預期輸出:</p>
+<pre><code>Hello, Stranger!
+Hello, OpenChoreo!
+</code></pre>
+<p>Positive : 端點路徑前綴是 <code>/{component}-{endpoint 名稱}</code>,所以這裡是 <code>/my-greeter-http</code>。可用 <code>kubectl get httproute -A -l openchoreo.dev/component=my-greeter -o yaml</code> 確認。</p>
+<h2 is-upgraded>排錯清單</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>症狀</p>
+</td><td colspan="1" rowspan="1"><p>檢查</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Component 一直不 Ready</p>
+</td><td colspan="1" rowspan="1"><p><code>kubectl describe component my-greeter -n default</code> 看 conditions</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Pod 起不來</p>
+</td><td colspan="1" rowspan="1"><p>在 <code>dp-*</code> namespace 用 <code>kubectl describe pod</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>404</p>
+</td><td colspan="1" rowspan="1"><p>檢查 HTTPRoute 的 path 與主機名</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>連不上</p>
+</td><td colspan="1" rowspan="1"><p>確認閘道 port 是 19080(Dev Container)</p>
+</td></tr>
+</table>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="修改並觀察新 Release" duration="4">
+        <p>把 <code>LOG_LEVEL</code> 改成 <code>debug</code>,重新套用:</p>
+<pre><code language="language-bash" class="language-bash">sed -i &#39;s/value: &#34;info&#34;/value: &#34;debug&#34;/&#39; my-greeter.yaml
+kubectl apply -f my-greeter.yaml
+kubectl get componentrelease -n default
+kubectl get releasebinding my-greeter-development -n default -o yaml
+</code></pre>
+<p>觀察:</p>
+<ol type="1">
+<li>是否多出一個新的 ComponentRelease?</li>
+<li>ReleaseBinding 指向的 Release 是否更新(因為 <code>autoDeploy: true</code>)?</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="清理" duration="1">
+        <pre><code language="language-bash" class="language-bash">kubectl delete -f my-greeter.yaml
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li>Component 和 Workload 各回答什麼問題?</li>
+<li>網址 <code>http://development-default.openchoreoapis.localhost:19080/my-greeter-http/greeter/greet</code> 的 <code>/my-greeter-http</code> 是什麼?</li>
+<li>如果想讓服務只在叢集內使用,不產生外部路由,該怎麼設定端點?</li>
+<li>修改 <code>LOG_LEVEL</code> 後再 apply,發生了什麼事?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>Component 回答「這是什麼類型、怎麼被平台管理」;Workload 回答「我的程式需要什麼才能跑」(映像、埠、依賴)。</li>
+<li>HTTPRoute 比對用的路徑前綴,格式是 <code>/{元件名}-{端點名}</code>,轉給應用時會被剝掉。</li>
+<li>不要把 <code>visibility</code> 寫成 <code>external</code>(例如寫 <code>project</code>),只有 <code>external</code> 才會產生對外路由。</li>
+<li>產生新的 ComponentRelease,因為 <code>autoDeploy: true</code>,development 的 ReleaseBinding 指向新 Release。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="恭喜與下一步" duration="1">
+        <p>你已經:</p>
+<ul>
+<li>✅ 安裝並登入 <code>occ</code></li>
+<li>✅ 手寫 Component + Workload 並部署</li>
+<li>✅ 沿著 Release → ReleaseBinding → 實際資源追蹤了整個過程</li>
+<li>✅ 透過閘道呼叫服務</li>
+</ul>
+<h2 is-upgraded>延伸閱讀</h2>
+<ul>
+<li><a href="https://openchoreo.dev/docs/getting-started/deploy-and-explore/" target="_blank">Deploy and Explore</a></li>
+<li><a href="https://openchoreo.dev/docs/developer-guide/projects-and-components/overview/" target="_blank">Projects and Components</a></li>
+<li><a href="https://openchoreo.dev/docs/developer-guide/projects-and-components/creating-a-component/" target="_blank">Creating a Component</a></li>
+</ul>
+<h2 is-upgraded>下一課</h2>
+<p><strong>04:從原始碼建置</strong> — 啟用 Workflow Plane,從 Git 原始碼自動建置映像並部署。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

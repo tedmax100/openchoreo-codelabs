@@ -1,0 +1,446 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 05:多環境與 Promotion</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-05-environments-promotion"
+                  title="OpenChoreo 實戰 05:多環境與 Promotion"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <p>「建置一次,到處部署」是交付的基本原則。OpenChoreo 用<strong>不可變的 Release</strong> 加上<strong>每個環境一個 ReleaseBinding</strong> 實現它:同一份產物在各環境以相同方式執行,只有環境專屬設定不同。</p>
+<h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成第 1 到 3 課(第 4 課不是必要)</li>
+<li>叢集有 <code>development</code>、<code>staging</code>、<code>production</code> 三個環境(Quick Start 預設就有)</li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>Environment、DeploymentPipeline 與 Project 的關係</li>
+<li>ReleaseBinding 的結構:釘選 Release、環境覆寫</li>
+<li>為 staging、production 手動建立 ReleaseBinding</li>
+<li>觀察「dev 自動更新、其他環境維持釘選」</li>
+<li>晉升(promotion)與回滾,本質上只是修改 <code>releaseName</code></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:環境、不可變制品與晉升" duration="8">
+        <h2 is-upgraded>為什麼需要多個環境?</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>環境</p>
+</td><td colspan="1" rowspan="1"><p>目的</p>
+</td><td colspan="1" rowspan="1"><p>典型特徵</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>development</p>
+</td><td colspan="1" rowspan="1"><p>開發者快速試錯</p>
+</td><td colspan="1" rowspan="1"><p>資源少、容許不穩定</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>staging</p>
+</td><td colspan="1" rowspan="1"><p>上線前的完整演練</p>
+</td><td colspan="1" rowspan="1"><p>盡量和 production 相似</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>production</p>
+</td><td colspan="1" rowspan="1"><p>真正服務使用者</p>
+</td><td colspan="1" rowspan="1"><p>高可用、嚴格管控</p>
+</td></tr>
+</table>
+<p>變更先在較低風險的環境驗證,再往前推,這個過程叫<strong>晉升(promotion)</strong>。</p>
+<h2 is-upgraded>設定與程式碼分離</h2>
+<p>業界著名的 <strong>Twelve-Factor App</strong> 方法論有一條原則:<strong>把設定放在環境裡,不要寫死在程式碼中</strong>。理由是同一份程式碼會在不同環境執行,只有「資料庫位址、日誌等級、副本數」這類設定不同。</p>
+<p>OpenChoreo 把這個原則做成制度:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>內容</p>
+</td><td colspan="1" rowspan="1"><p>放哪裡</p>
+</td><td colspan="1" rowspan="1"><p>為什麼</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>跨環境一致的(映像、埠、元件類型)</p>
+</td><td colspan="1" rowspan="1"><p>Component / Workload</p>
+</td><td colspan="1" rowspan="1"><p>每個環境都一樣,才有可比性</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>每個環境不同的(副本數、環境變數)</p>
+</td><td colspan="1" rowspan="1"><p>ReleaseBinding</p>
+</td><td colspan="1" rowspan="1"><p>只改這裡,不動程式碼</p>
+</td></tr>
+</table>
+<h2 is-upgraded>不可變(Immutable)制品</h2>
+<p><strong>不可變</strong>的意思是:一旦產生,內容就永遠不變。想改,就產生一個<strong>新的</strong>。</p>
+<p>好處:</p>
+<ul>
+<li><strong>可重現</strong>:「production 跑的 Release A」就是一個確定的東西</li>
+<li><strong>可回滾</strong>:舊版本還在,切回去就好</li>
+<li><strong>可審計</strong>:可以回答「那天到底部署了什麼」</li>
+</ul>
+<p>OpenChoreo 的 ComponentRelease 就是這樣的不可變快照,它的名稱尾碼是內容雜湊,內容一變雜湊就變。</p>
+<h2 is-upgraded>Release 與 ReleaseBinding 的比喻</h2>
+<p>可以想像成<strong>書與書店</strong>:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>OpenChoreo</p>
+</td><td colspan="1" rowspan="1"><p>比喻</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>ComponentRelease</p>
+</td><td colspan="1" rowspan="1"><p>一本書的某個「版次」(第一版、第二版),印出來就不改</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Environment</p>
+</td><td colspan="1" rowspan="1"><p>不同的書店(實體店、網路書店、直營店)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>ReleaseBinding</p>
+</td><td colspan="1" rowspan="1"><p>「這家書店目前上架第幾版」的紀錄</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>晉升</p>
+</td><td colspan="1" rowspan="1"><p>把某家書店的上架版次,改成較新的一版</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>回滾</p>
+</td><td colspan="1" rowspan="1"><p>改回舊版次</p>
+</td></tr>
+</table>
+<p>這樣你就能理解:<strong>晉升不是重新建置、重新打包,只是改變指標</strong>。所以非常快、非常安全。</p>
+<h2 is-upgraded>DeploymentPipeline:有向圖</h2>
+<p>DeploymentPipeline 規定了「環境之間可以怎麼走」,本質上是一張<strong>有向圖</strong>:</p>
+<pre><code>development ──▶ staging ──▶ production
+</code></pre>
+<p>它的價值是<strong>強制流程</strong>:例如規定 production 只能從 staging 來,不能從 development 直接跳過去。Project 透過 <code>deploymentPipelineRef</code> 選擇使用哪一條管線,所以同一個 Project 的所有元件遵守同一套流程。</p>
+<h2 is-upgraded>兩種「自動」</h2>
+<ul>
+<li><code>autoDeploy</code>:新 Release 自動套用到<strong>第一個環境</strong></li>
+<li>之後的環境:需要<strong>明確的晉升動作</strong>(人或自動化流程決定)</li>
+</ul>
+<p>這個設計讓「快速迭代」與「謹慎上線」並存。</p>
+<p>Positive : 接下來你會親手驗證這些概念:建立三個環境的綁定、讓 development 前進而其他環境不動、再做晉升與回滾。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="環境與部署管線" duration="5">
+        <h2 is-upgraded>看看你的環境</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get environment -n default
+kubectl get deploymentpipeline -n default default -o yaml
+</code></pre>
+<p>預設會有三個 Environment,其中 <code>production</code> 標記為 <code>isProduction: true</code>。DeploymentPipeline 的重點是 <code>promotionPaths</code>:</p>
+<pre><code language="language-yaml" class="language-yaml">spec:
+  promotionPaths:
+  - sourceEnvironmentRef:
+      kind: Environment
+      name: development
+    targetEnvironmentRefs:
+    - kind: Environment
+      name: staging
+  - sourceEnvironmentRef:
+      kind: Environment
+      name: staging
+    targetEnvironmentRefs:
+    - kind: Environment
+      name: production
+</code></pre>
+<p>這就是一張「有向圖」:development → staging → production。</p>
+<h2 is-upgraded>Project 如何選擇管線</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get project default -n default -o jsonpath=&#39;{.spec}&#39;
+</code></pre>
+<p>你會看到 <code>deploymentPipelineRef: {kind: DeploymentPipeline, name: default}</code>。<strong>同一個 Project 內的所有 Component 共用同一條管線</strong>。</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>資源</p>
+</td><td colspan="1" rowspan="1"><p>誰維護</p>
+</td><td colspan="1" rowspan="1"><p>作用</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Environment</p>
+</td><td colspan="1" rowspan="1"><p>平台工程師</p>
+</td><td colspan="1" rowspan="1"><p>一個部署階段,綁定一個 DataPlane</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>DeploymentPipeline</p>
+</td><td colspan="1" rowspan="1"><p>平台工程師</p>
+</td><td colspan="1" rowspan="1"><p>定義環境間可以怎麼晉升</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>ReleaseBinding</p>
+</td><td colspan="1" rowspan="1"><p>開發者/自動化</p>
+</td><td colspan="1" rowspan="1"><p>把某個 Release 釘在某個環境,並帶環境覆寫</p>
+</td></tr>
+</table>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="部署到 development" duration="4">
+        <p>沿用第 3 課的映像,建立 <code>promo-demo.yaml</code>:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: promo-demo
+  namespace: default
+spec:
+  owner:
+    projectName: default
+  autoDeploy: true
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: promo-demo-workload
+  namespace: default
+spec:
+  owner:
+    componentName: promo-demo
+    projectName: default
+  endpoints:
+    http:
+      type: HTTP
+      port: 9090
+      visibility: [external]
+  container:
+    image: &#34;ghcr.io/openchoreo/samples/greeter-service:latest&#34;
+    command:
+      - ./go-greeter
+    args:
+      - --port
+      - &#34;9090&#34;
+    env:
+      - key: LOG_LEVEL
+        value: &#34;info&#34;
+</code></pre>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f promo-demo.yaml
+kubectl wait --for=condition=Ready component/promo-demo -n default --timeout=60s
+kubectl get releasebinding -n default | grep promo
+</code></pre>
+<p>只有 <code>promo-demo-development</code> 被自動建立。因為 <code>autoDeploy: true</code> 只會部署到管線的<strong>第一個環境</strong>。</p>
+<p>記下目前的 Release 名稱:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get component promo-demo -n default -o jsonpath=&#39;{.status.latestRelease.name}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>下面以 <code>RELEASE1</code> 代表它。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="認識 ReleaseBinding" duration="4">
+        <p>看看 development 自動產生的 ReleaseBinding:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get releasebinding promo-demo-development -n default -o yaml
+</code></pre>
+<p>重要欄位:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>欄位</p>
+</td><td colspan="1" rowspan="1"><p>意義</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.environment</code></p>
+</td><td colspan="1" rowspan="1"><p>綁定的環境</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.owner</code></p>
+</td><td colspan="1" rowspan="1"><p>屬於哪個 Component</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.releaseName</code></p>
+</td><td colspan="1" rowspan="1"><p><strong>釘選</strong>的 ComponentRelease</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.state</code></p>
+</td><td colspan="1" rowspan="1"><p><code>Active</code> 表示部署中</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.componentTypeEnvironmentConfigs</code></p>
+</td><td colspan="1" rowspan="1"><p>覆寫 ComponentType 的環境參數(例如 <code>replicas</code>)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.workloadOverrides.container.env</code></p>
+</td><td colspan="1" rowspan="1"><p>覆寫容器環境變數</p>
+</td></tr>
+</table>
+<p>Positive : 第 2 課說過:跨環境一致的值放 Component 的 Parameters,<strong>環境專屬的值放 ReleaseBinding</strong>。這就是為什麼同一個 Release 可以在 staging 跑 2 個副本、在 production 跑 1 個,卻不用改 Component。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="建立 staging 與 production" duration="6">
+        <p>建立 <code>promo-staging.yaml</code>,把 <code>RELEASE1</code> 換成你的 Release 名稱:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: ReleaseBinding
+metadata:
+  name: promo-demo-staging
+  namespace: default
+spec:
+  environment: staging
+  owner:
+    componentName: promo-demo
+    projectName: default
+  releaseName: RELEASE1
+  state: Active
+  componentTypeEnvironmentConfigs:
+    replicas: 2
+  workloadOverrides:
+    container:
+      env:
+        - key: LOG_LEVEL
+          value: warn
+</code></pre>
+<p>再建立 <code>promo-prod.yaml</code>,環境改成 <code>production</code>,名稱改成 <code>promo-demo-production</code>,<code>replicas: 1</code>,<code>LOG_LEVEL</code> 設為 <code>error</code>。然後套用:</p>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f promo-staging.yaml -f promo-prod.yaml
+kubectl wait --for=condition=Available deploy -A -l openchoreo.dev/component=promo-demo --timeout=200s
+</code></pre>
+<h2 is-upgraded>驗證三個環境</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get deploy -A | grep promo
+</code></pre>
+<p>預期 staging 是 <code>2/2</code>,development 與 production 是 <code>1/1</code>。</p>
+<p>環境變數被放進各環境的 ConfigMap:</p>
+<pre><code language="language-bash" class="language-bash">for ns in development staging production; do
+  kubectl get cm -A -o jsonpath=&#39;{range .items[*]}{.metadata.namespace}{&#34; &#34;}{.metadata.name}{&#34; &#34;}{.data}{&#34;\n&#34;}{end}&#39; \
+    | grep &#34;promo-demo-$ns-env-configs&#34;
+done
+</code></pre>
+<p>預期分別看到 <code>{"LOG_LEVEL":"debug"}</code>(若尚未改動則是 <code>info</code>)、<code>warn</code>、<code>error</code>。</p>
+<p>呼叫三個環境(主機名稱格式 <code>{環境}-default.openchoreoapis.localhost</code>):</p>
+<pre><code language="language-bash" class="language-bash">for e in development staging production; do
+  curl -s http://$e-default.openchoreoapis.localhost:19080/promo-demo-http/greeter/greet; echo &#34; &lt;- $e&#34;
+done
+</code></pre>
+<p>Negative : 本課是手寫 ReleaseBinding,為了讓你看清楚結構,所以 <code>kubectl apply</code> 不會檢查是否符合 DeploymentPipeline 的晉升路徑。實務上建議用 <code>occ component deploy --to</code> 或 GitOps 流程,讓管線規則發揮作用(見最後一節)。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="新版本:dev 前進,其他環境不動" duration="5">
+        <p>修改程式的設定,產生新的 Release:</p>
+<pre><code language="language-bash" class="language-bash">sed -i &#39;s/value: &#34;info&#34;/value: &#34;debug&#34;/&#39; promo-demo.yaml
+kubectl apply -f promo-demo.yaml
+sleep 10
+kubectl get component promo-demo -n default -o jsonpath=&#39;{.status.latestRelease.name}{&#34;\n&#34;}&#39;
+kubectl get releasebinding -n default \
+  -o custom-columns=NAME:.metadata.name,ENV:.spec.environment,RELEASE:.spec.releaseName | grep -E &#39;NAME|promo&#39;
+</code></pre>
+<p>預期結果:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>ReleaseBinding</p>
+</td><td colspan="1" rowspan="1"><p>Release</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>promo-demo-development</p>
+</td><td colspan="1" rowspan="1"><p><strong>新的 </strong><code>RELEASE2</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>promo-demo-staging</p>
+</td><td colspan="1" rowspan="1"><p>仍是 <code>RELEASE1</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>promo-demo-production</p>
+</td><td colspan="1" rowspan="1"><p>仍是 <code>RELEASE1</code></p>
+</td></tr>
+</table>
+<p>Positive : 這就是「釘選」的價值:你可以在 development 反覆迭代,staging 與 production 不受影響,直到你明確決定晉升。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="晉升與回滾" duration="5">
+        <p><strong>晉升 = 把下一個環境的 </strong></p>
+<p><strong><code>releaseName</code></strong></p>
+<p><strong> 指向新的 Release。</strong> 把 <code>RELEASE2</code> 換成上一節看到的新名稱:</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch releasebinding promo-demo-staging -n default \
+  --type merge -p &#39;{&#34;spec&#34;:{&#34;releaseName&#34;:&#34;RELEASE2&#34;}}&#39;
+sleep 15
+kubectl get releasebinding -n default \
+  -o custom-columns=NAME:.metadata.name,RELEASE:.spec.releaseName | grep -E &#39;NAME|promo&#39;
+</code></pre>
+<p>staging 現在跟 development 同版本,但<strong>環境覆寫沒有消失</strong>:staging 仍然是 2 個副本、<code>LOG_LEVEL=warn</code>。</p>
+<h2 is-upgraded>回滾</h2>
+<p>回滾只是把釘選改回去:</p>
+<pre><code language="language-bash" class="language-bash">kubectl patch releasebinding promo-demo-staging -n default \
+  --type merge -p &#39;{&#34;spec&#34;:{&#34;releaseName&#34;:&#34;RELEASE1&#34;}}&#39;
+kubectl get releasebinding promo-demo-staging -n default \
+  -o jsonpath=&#39;{.status.conditions[?(@.type==&#34;Ready&#34;)].message}{&#34;\n&#34;}&#39;
+</code></pre>
+<p>預期看到 <code>ReleaseBinding is ready</code>。因為 Release 不可變,回滾得到的和當初部署的<strong>完全一樣</strong>。</p>
+<h2 is-upgraded>用 occ 晉升</h2>
+<p><code>occ</code> 也提供晉升指令(依 <code>occ component deploy --help</code>):</p>
+<pre><code language="language-bash" class="language-bash"># 部署最新 Release 到管線的第一個環境
+occ component deploy promo-demo --namespace default --project default
+
+# 晉升到下一個環境
+occ component deploy promo-demo --namespace default --project default --to staging
+</code></pre>
+<p>Negative : <code>occ</code> 需要先 <code>occ login</code>(會開瀏覽器)。本課的 <code>occ</code> 指令是依 <code>--help</code> 說明整理,沒有實際執行。還有 <code>occ releasebinding generate</code> 可以產生 ReleaseBinding 的 YAML,適合搭配 GitOps(第 6 課)。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="清理" duration="1">
+        <pre><code language="language-bash" class="language-bash">kubectl delete releasebinding promo-demo-staging promo-demo-production -n default
+kubectl delete -f promo-demo.yaml --ignore-not-found
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li>為什麼說「晉升不是重新建置」?</li>
+<li><code>autoDeploy</code> 會把新 Release 部署到哪些環境?</li>
+<li>跨環境一致的內容與每環境不同的內容,各放在哪?</li>
+<li>production 出問題,想回到上一版怎麼做?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>Release 是不可變快照,晉升只是把下一個環境的 <code>releaseName</code> 指向它,所以快速、可重現、可回滾。</li>
+<li>只會部署到管線的第一個環境;之後的環境需要明確的晉升。</li>
+<li>一致的放 Component / Workload;每環境不同的(副本數、環境變數)放 ReleaseBinding。</li>
+<li>把 production 的 ReleaseBinding 的 <code>releaseName</code> 改回舊的 Release 名稱。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="恭喜與下一步" duration="1">
+        <p>你已經:</p>
+<ul>
+<li>✅ 看懂 Environment → DeploymentPipeline → Project 的關係</li>
+<li>✅ 為每個環境手寫 ReleaseBinding 並設定不同的副本數與環境變數</li>
+<li>✅ 驗證了 Release 釘選:dev 前進,其他環境不動</li>
+<li>✅ 完成晉升與回滾</li>
+</ul>
+<h2 is-upgraded>重點整理</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>概念</p>
+</td><td colspan="1" rowspan="1"><p>一句話</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Release</p>
+</td><td colspan="1" rowspan="1"><p>不可變的版本,建置一次</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>ReleaseBinding</p>
+</td><td colspan="1" rowspan="1"><p>把 Release 釘在環境,並帶環境覆寫</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>晉升</p>
+</td><td colspan="1" rowspan="1"><p>修改下一個環境的 <code>releaseName</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>回滾</p>
+</td><td colspan="1" rowspan="1"><p>把 <code>releaseName</code> 改回舊值</p>
+</td></tr>
+</table>
+<h2 is-upgraded>下一課</h2>
+<p><strong>06:GitOps</strong> — 不再手動 <code>kubectl patch</code>,把 ReleaseBinding 放進 Git,由 Argo CD 同步。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

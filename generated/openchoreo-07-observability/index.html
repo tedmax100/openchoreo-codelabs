@@ -1,0 +1,528 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 07:可觀測性</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-07-observability"
+                  title="OpenChoreo 實戰 07:可觀測性"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <p>部署完成不代表運作正常。這一課啟用 <strong>Observability Plane</strong>,讓平台自動收集你應用的日誌、指標與 Kubernetes 事件。</p>
+<h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成第 1 到 3 課</li>
+<li>資源:建議 <strong>8 GB RAM 以上</strong>,主機磁碟至少 <strong>10 GB</strong> 可用(OpenSearch 與 Prometheus 會佔用)</li>
+<li>能連到 <code>ghcr.io</code>(需要下載多個 Helm chart 與映像)</li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>Observability Plane 由哪些元件組成</li>
+<li>如何安裝並向控制平面註冊</li>
+<li>日誌、指標、事件各自存放在哪裡</li>
+<li>如何用 <code>kubectl port-forward</code> 直接查底層資料來排錯</li>
+<li>追蹤(Tracing)需要什麼條件(實際驗證在第 9 課)</li>
+</ul>
+<p>Negative : 本課的 Observer API、<code>occ component logs</code> 與入口網站的觀測畫面都需要 OAuth 登入,作者在自動化環境無法完成瀏覽器登入,所以這些介面<strong>沒有實際操作</strong>,只有列出指令。底層的 OpenSearch 與 Prometheus 查詢則是實測過的。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:可觀測性的三大支柱" duration="10">
+        <h2 is-upgraded>監控 vs 可觀測性</h2>
+<table>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>監控(Monitoring)</p>
+</td><td colspan="1" rowspan="1"><p>可觀測性(Observability)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>回答的問題</p>
+</td><td colspan="1" rowspan="1"><p>「已知的問題有沒有發生?」</p>
+</td><td colspan="1" rowspan="1"><p>「為什麼出問題?我沒預料到的問題呢?」</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>做法</p>
+</td><td colspan="1" rowspan="1"><p>預先設定指標與告警</p>
+</td><td colspan="1" rowspan="1"><p>收集足夠豐富的資料,事後能自由探索</p>
+</td></tr>
+</table>
+<p>系統一複雜(尤其是微服務),你無法預先猜到所有問題,所以需要能「事後提問」的資料。</p>
+<h2 is-upgraded>三大支柱 + 事件</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>支柱</p>
+</td><td colspan="1" rowspan="1"><p>它是什麼</p>
+</td><td colspan="1" rowspan="1"><p>回答的問題</p>
+</td><td colspan="1" rowspan="1"><p>例子</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>日誌(Logs)</strong></p>
+</td><td colspan="1" rowspan="1"><p>帶時間戳的文字紀錄</p>
+</td><td colspan="1" rowspan="1"><p>「發生了什麼事?」</p>
+</td><td colspan="1" rowspan="1"><p><code>Starting HTTP Greeter on port 9090</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>指標(Metrics)</strong></p>
+</td><td colspan="1" rowspan="1"><p>隨時間變化的數字</p>
+</td><td colspan="1" rowspan="1"><p>「整體狀況如何?趨勢?」</p>
+</td><td colspan="1" rowspan="1"><p>CPU 使用率、每秒請求數</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>追蹤(Traces)</strong></p>
+</td><td colspan="1" rowspan="1"><p>一個請求經過各服務的完整路徑</p>
+</td><td colspan="1" rowspan="1"><p>「這個請求慢在哪裡?」</p>
+</td><td colspan="1" rowspan="1"><p>frontend → checkout → payment</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>事件(Events)</strong></p>
+</td><td colspan="1" rowspan="1"><p>Kubernetes 的狀態變化紀錄</p>
+</td><td colspan="1" rowspan="1"><p>「叢集做了什麼?」</p>
+</td><td colspan="1" rowspan="1"><p>Pod 被排程、映像拉取失敗</p>
+</td></tr>
+</table>
+<p>三者互補:<strong>指標告訴你有問題,追蹤告訴你問題在哪個服務,日誌告訴你為什麼。</strong></p>
+<h2 is-upgraded>追蹤的詞彙</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>名詞</p>
+</td><td colspan="1" rowspan="1"><p>說明</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Trace(追蹤)</strong></p>
+</td><td colspan="1" rowspan="1"><p>一個請求從頭到尾的完整紀錄,有唯一的 <code>traceId</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Span(跨度)</strong></p>
+</td><td colspan="1" rowspan="1"><p>追蹤中的一個步驟(例如「呼叫 payment 服務」),有起訖時間、<code>spanId</code>、<code>parentSpanId</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>傳遞(propagation)</strong></p>
+</td><td colspan="1" rowspan="1"><p>服務之間透過標頭傳遞 <code>traceId</code>,才能把各服務的 span 串成一棵樹</p>
+</td></tr>
+</table>
+<p>因為追蹤需要<strong>程式碼配合</strong>(埋點),所以不像日誌那樣「自動就有」。這也是為什麼第 3 課的 Greeter 沒有追蹤資料。</p>
+<h2 is-upgraded>OpenTelemetry</h2>
+<p><strong>OpenTelemetry(OTel)</strong> 是 CNCF 的觀測資料標準與工具集,核心是統一「資料長什麼樣、怎麼傳」:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>元件</p>
+</td><td colspan="1" rowspan="1"><p>說明</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>SDK</strong></p>
+</td><td colspan="1" rowspan="1"><p>放進你的應用程式,產生 span、指標</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>OTLP</strong></p>
+</td><td colspan="1" rowspan="1"><p>傳輸協定(gRPC 4317 或 HTTP 4318)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Collector</strong></p>
+</td><td colspan="1" rowspan="1"><p>接收、處理(例如附加 Kubernetes 標籤)、轉送到後端</p>
+</td></tr>
+</table>
+<p>好處是<strong>與廠商無關</strong>:今天送到 OpenSearch,明天換別的後端,應用程式不用改。</p>
+<h2 is-upgraded>各元件在做什麼?</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>元件</p>
+</td><td colspan="1" rowspan="1"><p>做法</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Fluent Bit</strong></p>
+</td><td colspan="1" rowspan="1"><p>以 DaemonSet 在每個節點跑一份,讀取容器的 stdout/stderr 日誌檔,轉送出去</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Prometheus</strong></p>
+</td><td colspan="1" rowspan="1"><p>以**拉取(pull)**方式,定期去各目標的 <code>/metrics</code> 端點抓數字,存成時間序列;用 PromQL 查詢</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>OpenSearch</strong></p>
+</td><td colspan="1" rowspan="1"><p>可水平擴充的搜尋引擎,擅長全文檢索,適合存日誌與追蹤</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>kube-state-metrics</strong></p>
+</td><td colspan="1" rowspan="1"><p>把 Kubernetes 物件的狀態(例如 Pod 重啟次數)轉成指標</p>
+</td></tr>
+</table>
+<h2 is-upgraded>為什麼標籤(labels)這麼重要?</h2>
+<p>原始的容器日誌只知道「來自某個 Pod」。OpenChoreo 的收集管線會附上 <code>component</code>、<code>project</code>、<code>environment</code> 等標籤。這讓你能問<strong>平台層級</strong>的問題:「development 環境裡 checkout 元件的錯誤日誌」,而不是去猜 Pod 名稱(Pod 名稱每次重建都會變)。</p>
+<h2 is-upgraded>為什麼觀測資料要放在獨立的 Plane?</h2>
+<ul>
+<li>觀測資料量大,不該和業務服務搶資源</li>
+<li>服務掛了,觀測系統必須還活著,才能告訴你為什麼掛</li>
+<li>可以集中收集多個 Data Plane 的資料</li>
+</ul>
+<h2 is-upgraded>可替換的模組化設計</h2>
+<p>OpenChoreo 把日誌、指標、追蹤各做成獨立的 Helm 模組,透過 <strong>adapter(轉接器)</strong> 對外提供統一的查詢介面。想換掉 OpenSearch 或 Prometheus,只要換對應的模組即可。</p>
+<p>下面就來安裝它們。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="架構" duration="4">
+        <table>
+<tr><td colspan="1" rowspan="1"><p>元件</p>
+</td><td colspan="1" rowspan="1"><p>角色</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Fluent Bit</strong></p>
+</td><td colspan="1" rowspan="1"><p>DaemonSet,收集每個節點上容器的日誌</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>OpenSearch</strong></p>
+</td><td colspan="1" rowspan="1"><p>儲存日誌、事件(與追蹤)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Prometheus + kube-state-metrics</strong></p>
+</td><td colspan="1" rowspan="1"><p>收集指標</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>OpenTelemetry Collector</strong></p>
+</td><td colspan="1" rowspan="1"><p>接收 OTLP 追蹤(gRPC 4317 / HTTP 4318)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>events-collector</strong></p>
+</td><td colspan="1" rowspan="1"><p>把 Kubernetes 事件寫進 OpenSearch</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>logs / metrics / tracing adapter</strong></p>
+</td><td colspan="1" rowspan="1"><p>把各後端包成統一的查詢介面</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Observer</strong></p>
+</td><td colspan="1" rowspan="1"><p>對外的查詢 API,需要 OAuth token</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>cluster-agent</strong></p>
+</td><td colspan="1" rowspan="1"><p>與控制平面通訊</p>
+</td></tr>
+</table>
+<p>資料流向:</p>
+<pre><code>容器 stdout ─▶ Fluent Bit ─▶ OpenSearch ─▶ logs-adapter ┐
+cAdvisor/kube-state ─▶ Prometheus ─▶ metrics-adapter    ├─▶ Observer ─▶ Backstage / occ / MCP
+應用 OTLP ─▶ OTel Collector ─▶ OpenSearch ─▶ tracing-adapter ┘
+</code></pre>
+<p>Positive : OpenChoreo 的觀測是<strong>可替換的模組</strong>:日誌、追蹤、指標各自是一個 Helm 模組,平台團隊可以換成其他後端,只要實作對應的 adapter。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="安裝 Observability Plane" duration="15">
+        <p>以下對應官方 k3d 文件的 Step 7。若你用第 1 課的 Quick Start 容器,執行 <code>./install.sh --version v1.3.1 --with-observability</code> 即可,可跳過本節。</p>
+<h2 is-upgraded>1. Namespace 與 CA</h2>
+<pre><code language="language-bash" class="language-bash">kubectl create namespace openchoreo-observability-plane --dry-run=client -o yaml | kubectl apply -f -
+CA_CRT=$(kubectl get secret cluster-gateway-ca \
+  -n openchoreo-control-plane -o jsonpath=&#39;{.data.ca\.crt}&#39; | base64 -d)
+kubectl create configmap cluster-gateway-ca \
+  --from-literal=ca.crt=&#34;$CA_CRT&#34; \
+  -n openchoreo-observability-plane --dry-run=client -o yaml | kubectl apply -f -
+</code></pre>
+<h2 is-upgraded>2. 密鑰(OpenSearch 帳密與 Observer OAuth)</h2>
+<pre><code language="language-bash" class="language-bash">kubectl apply -f - &lt;&lt;EOF
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: opensearch-admin-credentials
+  namespace: openchoreo-observability-plane
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: default
+  target:
+    name: opensearch-admin-credentials
+  data:
+  - secretKey: username
+    remoteRef: {key: opensearch-username, property: value}
+  - secretKey: password
+    remoteRef: {key: opensearch-password, property: value}
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: observer-secret
+  namespace: openchoreo-observability-plane
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: default
+  target:
+    name: observer-secret
+  data:
+  - secretKey: UID_RESOLVER_OAUTH_CLIENT_SECRET
+    remoteRef: {key: observer-oauth-client-secret, property: value}
+EOF
+kubectl wait -n openchoreo-observability-plane \
+  --for=condition=Ready externalsecret/opensearch-admin-credentials externalsecret/observer-secret --timeout=60s
+</code></pre>
+<h2 is-upgraded>3. 為 Fluent Bit 產生 machine-id</h2>
+<pre><code language="language-bash" class="language-bash">docker exec k3d-openchoreo-server-0 sh -c \
+  &#34;test -s /etc/machine-id || cat /proc/sys/kernel/random/uuid | tr -d &#39;-&#39; &gt; /etc/machine-id&#34;
+</code></pre>
+<h2 is-upgraded>4. 核心元件</h2>
+<pre><code language="language-bash" class="language-bash">helm upgrade --install openchoreo-observability-plane \
+  oci://ghcr.io/openchoreo/helm-charts/openchoreo-observability-plane \
+  --version 1.3.1 --namespace openchoreo-observability-plane \
+  --values https://raw.githubusercontent.com/openchoreo/openchoreo/release-v1.3/install/k3d/single-cluster/values-op.yaml \
+  --set observer.audit.enabled=true --timeout 25m
+</code></pre>
+<h2 is-upgraded>5. 日誌、追蹤、指標模組</h2>
+<pre><code language="language-bash" class="language-bash">helm upgrade --install observability-logs-opensearch \
+  oci://ghcr.io/openchoreo/helm-charts/observability-logs-opensearch \
+  --create-namespace --namespace openchoreo-observability-plane --version 0.6.0 \
+  --set openSearchSetup.openSearchSecretName=opensearch-admin-credentials \
+  --set adapter.openSearchSecretName=opensearch-admin-credentials \
+  --set auditLogs.enabled=true
+
+helm upgrade --install observability-traces-opensearch \
+  oci://ghcr.io/openchoreo/helm-charts/observability-tracing-opensearch \
+  --create-namespace --namespace openchoreo-observability-plane --version 0.6.0 \
+  --set openSearch.enabled=false \
+  --set openSearchSetup.openSearchSecretName=opensearch-admin-credentials
+
+helm upgrade --install observability-metrics-prometheus \
+  oci://ghcr.io/openchoreo/helm-charts/observability-metrics-prometheus \
+  --create-namespace --namespace openchoreo-observability-plane --version 0.7.1
+</code></pre>
+<h2 is-upgraded>6. 啟用日誌收集與事件收集</h2>
+<pre><code language="language-bash" class="language-bash">helm upgrade observability-logs-opensearch \
+  oci://ghcr.io/openchoreo/helm-charts/observability-logs-opensearch \
+  --namespace openchoreo-observability-plane --version 0.6.0 --reuse-values \
+  --set fluent-bit.enabled=true --set fluentBitCustomizations.clusterInstance=openchoreo
+</code></pre>
+<p>Kubernetes 事件收集(<code>observability-events-otel-collector</code>,版本 0.1.2)的完整 values 較長,請直接複製<a href="https://openchoreo.dev/docs/getting-started/try-it-out/on-k3d-locally/" target="_blank">官方文件</a>的 Step 7.9。</p>
+<h2 is-upgraded>7. 向控制平面註冊並連結</h2>
+<pre><code language="language-bash" class="language-bash">kubectl wait -n openchoreo-observability-plane \
+  --for=condition=Ready certificate/cluster-agent-observabilityplane-tls --timeout=300s
+AGENT_CA=$(kubectl get secret cluster-agent-tls \
+  -n openchoreo-observability-plane -o jsonpath=&#39;{.data.ca\.crt}&#39; | base64 -d)
+kubectl apply -f - &lt;&lt;EOF
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterObservabilityPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  clusterAgent:
+    clientCA:
+      value: |
+$(echo &#34;$AGENT_CA&#34; | sed &#39;s/^/        /&#39;)
+  observerURL: http://observer.openchoreo.localhost:11080
+EOF
+
+kubectl patch clusterdataplane default --type merge \
+  -p &#39;{&#34;spec&#34;:{&#34;observabilityPlaneRef&#34;:{&#34;kind&#34;:&#34;ClusterObservabilityPlane&#34;,&#34;name&#34;:&#34;default&#34;}}}&#39;
+kubectl patch clusterworkflowplane default --type merge \
+  -p &#39;{&#34;spec&#34;:{&#34;observabilityPlaneRef&#34;:{&#34;kind&#34;:&#34;ClusterObservabilityPlane&#34;,&#34;name&#34;:&#34;default&#34;}}}&#39;
+</code></pre>
+<p>最後一步是在控制平面啟用稽核日誌(官方 Step 7.12,<code>helm upgrade openchoreo-control-plane ... --set openchoreoApi.config.audit.enabled=true</code>)。</p>
+<h2 is-upgraded>驗證</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get pods -n openchoreo-observability-plane
+kubectl get clusterobservabilityplane
+</code></pre>
+<p>所有 Pod 應為 Running 或 Completed(<code>opensearch-setup-*</code> 是一次性 Job)。</p>
+<p>Negative : <strong>第一次安裝很慢。</strong> 實測在慢速網路下,核心元件約 12 分鐘,另有幾個映像(<code>events-collector</code>、<code>metrics-adapter</code>、你的應用)在 <code>ContainerCreating</code> 停留數分鐘。用 <code>kubectl describe pod</code> 看到 <code>Pulling image</code> 就是在下載,耐心等待即可。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="產生資料" duration="5">
+        <p>部署第 3 課的服務並打一些流量(沿用 <code>my-greeter.yaml</code>,把名稱換成 <code>obs-demo</code>):</p>
+<pre><code language="language-bash" class="language-bash">sed &#39;s/my-greeter/obs-demo/g&#39; my-greeter.yaml | kubectl apply -f -
+kubectl wait --for=condition=Available deploy -A -l openchoreo.dev/component=obs-demo --timeout=300s
+
+for i in $(seq 1 40); do
+  curl -s -o /dev/null -w &#34;%{http_code} &#34; \
+    &#34;http://development-default.openchoreoapis.localhost:19080/obs-demo-http/greeter/greet?name=u$i&#34;
+done; echo
+</code></pre>
+<p>預期 40 個 <code>200</code>。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="日誌" duration="6">
+        <p>直接查 OpenSearch(底層儲存)。先取得帳密並 port-forward:</p>
+<pre><code language="language-bash" class="language-bash">NS=openchoreo-observability-plane
+U=$(kubectl get secret opensearch-admin-credentials -n $NS -o jsonpath=&#39;{.data.username}&#39; | base64 -d)
+P=$(kubectl get secret opensearch-admin-credentials -n $NS -o jsonpath=&#39;{.data.password}&#39; | base64 -d)
+kubectl port-forward -n $NS svc/opensearch 19200:9200 &amp;
+sleep 3
+curl -sk -u &#34;$U:$P&#34; &#34;https://localhost:19200/_cat/indices?h=index,docs.count&amp;s=index&#34;
+</code></pre>
+<p>預期看到的索引:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>索引</p>
+</td><td colspan="1" rowspan="1"><p>內容</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>container-logs-YYYY-MM-DD</code></p>
+</td><td colspan="1" rowspan="1"><p>所有容器的 stdout/stderr</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>k8s-events-YYYY-MM-DD</code></p>
+</td><td colspan="1" rowspan="1"><p>Kubernetes 事件</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>security-auditlog-*</code></p>
+</td><td colspan="1" rowspan="1"><p>稽核日誌</p>
+</td></tr>
+</table>
+<p>查詢某個 Component 的日誌。OpenChoreo 會把 Pod 的標籤(<code>openchoreo.dev/component</code> 等)原樣附到每筆日誌上,點會被轉成底線:</p>
+<pre><code language="language-bash" class="language-bash">curl -sk -u &#34;$U:$P&#34; &#34;https://localhost:19200/container-logs-*/_search?size=1&#34; \
+  -H &#39;content-type: application/json&#39; \
+  -d &#39;{&#34;query&#34;:{&#34;match_phrase&#34;:{&#34;kubernetes.labels.openchoreo_dev/component&#34;:&#34;obs-demo&#34;}}}&#39;
+</code></pre>
+<p>每筆日誌包含:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>欄位</p>
+</td><td colspan="1" rowspan="1"><p>範例</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>log</code></p>
+</td><td colspan="1" rowspan="1"><p><code>Starting HTTP Greeter on port 9090</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>stream</code></p>
+</td><td colspan="1" rowspan="1"><p><code>stderr</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>kubernetes.pod_name</code></p>
+</td><td colspan="1" rowspan="1"><p><code>obs-demo-development-...</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>kubernetes.namespace_name</code></p>
+</td><td colspan="1" rowspan="1"><p><code>dp-default-default-development-...</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>kubernetes.labels.openchoreo_dev/component</code></p>
+</td><td colspan="1" rowspan="1"><p><code>obs-demo</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>kubernetes.labels.openchoreo_dev/environment</code></p>
+</td><td colspan="1" rowspan="1"><p><code>development</code></p>
+</td></tr>
+</table>
+<p>Positive : 因為每筆日誌都帶有 component、project、environment 標籤,Observer 才能回答「development 環境裡 <code>obs-demo</code> 的日誌」這種平台層級的問題,而不是只能依 Pod 名稱查。</p>
+<p>Negative : 這個 Greeter 範例只在啟動時印一行日誌,不會記錄每個請求,所以你只會查到 1 筆。要看到更多日誌,請換成會輸出存取日誌的應用。</p>
+<h2 is-upgraded>透過平台介面查詢</h2>
+<p>登入後可用 <code>occ</code>(依 <code>--help</code> 整理,未實測):</p>
+<pre><code language="language-bash" class="language-bash">occ component logs obs-demo
+occ component logs obs-demo --env development -f
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="指標" duration="5">
+        <p>Prometheus 收集了容器與 kube-state 指標:</p>
+<pre><code language="language-bash" class="language-bash">kubectl port-forward -n openchoreo-observability-plane svc/prometheus-operated 19090:9090 &amp;
+sleep 3
+curl -s localhost:19090/api/v1/query \
+  --data-urlencode &#39;query=sum(container_cpu_usage_seconds_total{namespace=&#34;dp-default-default-development-f8e58905&#34;}) by (pod)&#39;
+</code></pre>
+<p>預期結果包含你的 <code>obs-demo-development-...</code> Pod 的 CPU 累計秒數。</p>
+<p>常用查詢:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>目的</p>
+</td><td colspan="1" rowspan="1"><p>PromQL</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>容器 CPU 使用率</p>
+</td><td colspan="1" rowspan="1"><p><code>rate(container_cpu_usage_seconds_total{pod=~"obs-demo.*"}[5m])</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>記憶體</p>
+</td><td colspan="1" rowspan="1"><p><code>container_memory_working_set_bytes{pod=~"obs-demo.*"}</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>重啟次數</p>
+</td><td colspan="1" rowspan="1"><p><code>kube_pod_container_status_restarts_total{pod=~"obs-demo.*"}</code></p>
+</td></tr>
+</table>
+<p>Positive : Data Plane 的 namespace 名稱(<code>dp-<namespace>-<project>-<environment>-<雜湊></code>)可用 <code>kubectl get ns | grep dp-</code> 查到,每台叢集的雜湊不同。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="追蹤與事件" duration="5">
+        <h2 is-upgraded>事件</h2>
+<p>Kubernetes 事件(Pod 排程、拉取映像失敗...)被寫進 <code>k8s-events-*</code> 索引,適合排查「為什麼 Pod 起不來」。</p>
+<h2 is-upgraded>追蹤</h2>
+<p>OpenTelemetry Collector 在叢集內開放 OTLP 端點:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>協定</p>
+</td><td colspan="1" rowspan="1"><p>位址</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>gRPC</p>
+</td><td colspan="1" rowspan="1"><p><code>opentelemetry-collector.openchoreo-observability-plane:4317</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>HTTP</p>
+</td><td colspan="1" rowspan="1"><p><code>opentelemetry-collector.openchoreo-observability-plane:4318</code></p>
+</td></tr>
+</table>
+<p>你的應用要自己用 OpenTelemetry SDK 送出 span 到上面的位址。Greeter 範例沒有埋點,所以不會產生任何追蹤。</p>
+<p>Positive : 追蹤管線已用真實服務驗證:在第 9 課讓叢集內的微服務把 span 送到上面的 Collector 位址,OpenSearch 出現了 <code>otel-traces-YYYY-MM-DD</code> 索引,span 帶有 K8s 屬性。</p>
+<p>Negative : 作者一開始從本機 <code>kubectl port-forward</code> 用 <code>telemetrygen</code> 送測試 span,<strong>沒有</strong>看到追蹤索引,Collector 也沒有錯誤,原因未查明(推測與 Collector 依來源 Pod 關聯 K8s 屬性有關,未驗證)。要驗證追蹤,請讓叢集內有 OTel 埋點的應用送出 span,做法見第 9 課。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Observer API 與入口網站" duration="3">
+        <p>Observer 透過閘道對外:</p>
+<pre><code language="language-bash" class="language-bash">curl http://observer.openchoreo.localhost:11080/health
+</code></pre>
+<p>回 <code>200</code>。其他端點需要 OAuth token,沒有 token 會被拒絕:</p>
+<pre><code language="language-bash" class="language-bash">curl -X POST http://observer.openchoreo.localhost:11080/api/v1/logs/query
+# {&#34;error&#34;:&#34;MISSING_TOKEN&#34;,&#34;message&#34;:&#34;missing or invalid authentication token&#34;}
+</code></pre>
+<p>Observer 只服務已通過身分驗證的使用者(入口網站、<code>occ</code>、MCP server)。</p>
+<h2 is-upgraded>用 MCP 走正門查詢</h2>
+<p>第 10 課會介紹如何用 Client Credentials 取得 token。有了 token,Observer 的 MCP 端點 <code>http://observer.openchoreo.localhost:11080/mcp</code> 就能查詢日誌與指標。實測 <code>query_component_logs</code> 查到了 <code>react-starter</code> 的存取日誌,<code>query_resource_metrics</code> 回傳了 CPU 與記憶體的時間序列。細節請見第 10 課。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="清理" duration="1">
+        <pre><code language="language-bash" class="language-bash">sed &#39;s/my-greeter/obs-demo/g&#39; my-greeter.yaml | kubectl delete -f -
+</code></pre>
+<p>Observability Plane 可以保留;如果想釋放資源:</p>
+<pre><code language="language-bash" class="language-bash">helm uninstall -n openchoreo-observability-plane \
+  openchoreo-observability-plane observability-logs-opensearch \
+  observability-traces-opensearch observability-metrics-prometheus \
+  observability-events-otel-collector
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li>指標、日誌、追蹤各回答什麼問題?</li>
+<li>為什麼 Greeter 範例不會有追蹤資料?</li>
+<li>OpenChoreo 為什麼要在日誌上附 component、environment 等標籤?</li>
+<li>Prometheus 是推還是拉?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>指標:整體狀況與趨勢(有問題嗎);追蹤:請求慢在哪個服務;日誌:為什麼出錯。</li>
+<li>追蹤需要應用程式自己用 OpenTelemetry SDK 埋點並送出 span,Greeter 沒有埋點。</li>
+<li>讓人能問平台層級的問題(某環境某元件的錯誤),而不是依會變動的 Pod 名稱查。</li>
+<li>拉取(pull):定期去各目標的 <code>/metrics</code> 端點抓取。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="恭喜與下一步" duration="1">
+        <p>你已經:</p>
+<ul>
+<li>✅ 安裝並註冊了 Observability Plane</li>
+<li>✅ 理解日誌、指標、追蹤、事件各自的路徑</li>
+<li>✅ 直接查詢 OpenSearch 與 Prometheus,確認資料有進來</li>
+<li>✅ 知道追蹤需要應用自己埋點,以及哪些介面需要登入</li>
+</ul>
+<h2 is-upgraded>延伸閱讀</h2>
+<ul>
+<li><a href="https://openchoreo.dev/docs/getting-started/try-it-out/on-k3d-locally/" target="_blank">Run Locally on K3d(Step 7)</a></li>
+<li><a href="https://opentelemetry.io/docs/" target="_blank">OpenTelemetry 文件</a></li>
+</ul>
+<h2 is-upgraded>下一課</h2>
+<p><strong>08:平台工程師——自訂 Golden Path</strong> — 自己定義 ComponentType 與 Trait。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

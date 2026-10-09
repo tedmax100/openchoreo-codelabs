@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2026-10-09T22:57:46+08:00",
+  "id": "openchoreo-08-golden-path",
+  "duration": 60,
+  "title": "OpenChoreo 實戰 08:平台工程師——自訂 Golden Path",
+  "summary": "以平台工程師的身分自訂 ComponentType 與 Trait,為團隊建立有護欄的 Golden Path,並驗證參數、環境覆寫與驗證規則",
+  "source": "tutorials/08-golden-path.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "openchoreo",
+    "kubernetes",
+    "platform-engineering"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://github.com/openchoreo/openchoreo/issues",
+  "url": "openchoreo-08-golden-path"
+}

@@ -1,0 +1,12 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: hello-gitops
+  namespace: default
+spec:
+  owner:
+    projectName: default
+  autoDeploy: true
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service

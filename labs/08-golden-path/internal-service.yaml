@@ -1,0 +1,75 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterComponentType
+metadata:
+  name: internal-service
+  annotations:
+    openchoreo.dev/description: 只在叢集內提供服務的元件,不產生外部路由,並強制標註負責團隊
+spec:
+  workloadType: deployment
+  allowedTraits:
+    - kind: ClusterTrait
+      name: horizontal-pod-autoscaler
+    - kind: ClusterTrait
+      name: pod-disruption-budget
+  parameters:
+    openAPIV3Schema:
+      type: object
+      required: [team]
+      properties:
+        team:
+          type: string
+          description: 負責這個服務的團隊,會成為 Pod 的 team 標籤
+  environmentConfigs:
+    openAPIV3Schema:
+      type: object
+      properties:
+        replicas:
+          type: integer
+          default: 1
+          minimum: 1
+        logLevel:
+          type: string
+          default: info
+          enum: [debug, info, warn, error]
+  validations:
+    - rule: ${size(workload.endpoints) > 0}
+      message: internal-service 至少需要一個端點
+    - rule: ${!workload.endpoints.exists(name, ep, "external" in ep.visibility)}
+      message: internal-service 不允許 external 端點,請改用 deployment/service
+  resources:
+    - id: deployment
+      targetPlane: dataplane
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: ${metadata.name}
+          namespace: ${metadata.namespace}
+          labels: '${oc_merge(metadata.labels, {"team": parameters.team})}'
+        spec:
+          replicas: ${environmentConfigs.replicas}
+          selector:
+            matchLabels: ${metadata.podSelectors}
+          template:
+            metadata:
+              labels: '${oc_merge(metadata.podSelectors, {"team": parameters.team})}'
+            spec:
+              containers:
+                - name: main
+                  image: ${workload.container.image}
+                  command: '${has(workload.container.command) ? workload.container.command : oc_omit()}'
+                  args: '${has(workload.container.args) ? workload.container.args : oc_omit()}'
+                  env: '${[{"name": "LOG_LEVEL", "value": environmentConfigs.logLevel}]}'
+    - id: service
+      targetPlane: dataplane
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: ${metadata.componentName}
+          namespace: ${metadata.namespace}
+          labels: ${metadata.labels}
+        spec:
+          type: ClusterIP
+          ports: ${workload.toServicePorts()}
+          selector: ${metadata.podSelectors}

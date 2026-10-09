@@ -1,0 +1,440 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 04:從原始碼建置</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-04-build-from-source"
+                  title="OpenChoreo 實戰 04:從原始碼建置"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <p>第 3 課部署的是<strong>預建映像</strong>。這一課要讓 OpenChoreo 自己從 Git 原始碼把映像建出來,這就是內建 CI/CD 的核心。</p>
+<h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成第 1 到 3 課</li>
+<li><strong>8 GB RAM / 4 CPU</strong>(啟用 Workflow Plane 的建議值)</li>
+<li>主機磁碟至少有 <strong>10 GB</strong> 空間(建置映像與 registry 會佔用)</li>
+<li>能連到 GitHub 與 <code>ghcr.io</code></li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>Workflow Plane 是什麼,以及如何安裝</li>
+<li>Component 的 <code>workflow</code> 欄位與 <code>WorkflowRun</code> 的關係</li>
+<li>建置管線的四個步驟</li>
+<li>用 <code>kubectl</code> 與 Argo Workflows UI 觀察建置</li>
+<li>建置完成後自動產生 Workload 並部署</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:CI/CD 與容器映像" duration="8">
+        <h2 is-upgraded>CI 與 CD 各是什麼?</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>縮寫</p>
+</td><td colspan="1" rowspan="1"><p>全名</p>
+</td><td colspan="1" rowspan="1"><p>做什麼</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>CI</strong></p>
+</td><td colspan="1" rowspan="1"><p>Continuous Integration(持續整合)</p>
+</td><td colspan="1" rowspan="1"><p>程式碼一變動就自動:拉程式碼、編譯、測試、<strong>建置成映像</strong></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>CD</strong></p>
+</td><td colspan="1" rowspan="1"><p>Continuous Delivery/Deployment(持續交付/部署)</p>
+</td><td colspan="1" rowspan="1"><p>把建好的成品自動(或半自動)送到各環境</p>
+</td></tr>
+</table>
+<p>本課是 CI 的部分:從 Git 原始碼產出可部署的映像。第 5 課和第 6 課是 CD 的部分。</p>
+<h2 is-upgraded>映像、Dockerfile、Registry</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>名詞</p>
+</td><td colspan="1" rowspan="1"><p>說明</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>容器映像(image)</strong></p>
+</td><td colspan="1" rowspan="1"><p>一個打包好的唯讀檔案系統加啟動設定,是「可執行的成品」</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Dockerfile</strong></p>
+</td><td colspan="1" rowspan="1"><p>一份食譜:從哪個基底映像開始、複製哪些檔案、執行哪些指令、啟動時跑什麼</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>建置脈絡(build context)</strong></p>
+</td><td colspan="1" rowspan="1"><p>建置時可以讀取的檔案範圍(本課的 <code>docker.context</code>)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Registry</strong></p>
+</td><td colspan="1" rowspan="1"><p>存放映像的倉庫,Kubernetes 從這裡拉取映像來跑</p>
+</td></tr>
+</table>
+<p>流程是:<code>原始碼 + Dockerfile</code> →(建置)→ <code>映像</code> →(推送)→ <code>Registry</code> →(拉取)→ <code>Pod</code>。</p>
+<h2 is-upgraded>為什麼要在叢集裡建置?</h2>
+<p>你當然也可以在自己的電腦或外部 CI 服務建置。讓平台內建的好處是:</p>
+<ul>
+<li>開發者不用自己維護 CI 設定,填「Git 網址、分支」即可</li>
+<li>建置紀錄與元件綁在一起,平台知道「這個映像從哪個 commit 來」</li>
+<li>平台工程師可以統一規範用什麼工具建置、推到哪裡</li>
+</ul>
+<h2 is-upgraded>為什麼需要獨立的 Workflow Plane?</h2>
+<p>建置要執行<strong>別人寫的程式碼與指令</strong>(Dockerfile 裡的 <code>RUN</code>),這比跑一個已經建好的服務風險更高,而且很吃 CPU、記憶體和磁碟。獨立出來有三個好處:</p>
+<ol type="1">
+<li><strong>安全隔離</strong>:建置的高風險行為不會碰到正式服務所在的環境</li>
+<li><strong>資源隔離</strong>:建置高峰不會拖慢線上服務</li>
+<li><strong>獨立擴展</strong>:可以只擴充建置的容量</li>
+</ol>
+<h2 is-upgraded>Argo Workflows 與 Podman</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>工具</p>
+</td><td colspan="1" rowspan="1"><p>角色</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Argo Workflows</strong></p>
+</td><td colspan="1" rowspan="1"><p>在 Kubernetes 上執行「有順序的多步驟任務」的引擎。每個步驟是一個 Pod,步驟之間可傳遞輸出</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Podman</strong></p>
+</td><td colspan="1" rowspan="1"><p>不需要常駐背景程式(daemon)的容器工具,適合在 Pod 裡建置映像</p>
+</td></tr>
+</table>
+<p>本課你會看到的四個步驟(checkout、build、publish、generate-workload),就是 Argo 的四個步驟,每一步一個 Pod。</p>
+<h2 is-upgraded>模板與執行:Workflow 與 WorkflowRun</h2>
+<p>如果熟悉程式設計,可以這樣理解:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>OpenChoreo</p>
+</td><td colspan="1" rowspan="1"><p>類比</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>ClusterWorkflow</strong></p>
+</td><td colspan="1" rowspan="1"><p>類別(class)或函式定義:規定參數 schema 與流程</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>WorkflowRun</strong></p>
+</td><td colspan="1" rowspan="1"><p>實例(instance)或一次函式呼叫:帶入實際參數執行一次</p>
+</td></tr>
+</table>
+<p>一個 Workflow 可以被不同元件、不同次數重複執行。</p>
+<h2 is-upgraded>Dockerfile 建置 vs Buildpacks</h2>
+<p>叢集預設提供多種建置器:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>建置器</p>
+</td><td colspan="1" rowspan="1"><p>適用情境</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>dockerfile-builder</code>(本課)</p>
+</td><td colspan="1" rowspan="1"><p>專案已有 Dockerfile,想完全掌控</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Buildpacks 系列(paketo、gcp、ballerina)</p>
+</td><td colspan="1" rowspan="1"><p>沒有 Dockerfile,由工具偵測語言並自動產生映像</p>
+</td></tr>
+</table>
+<h2 is-upgraded>「建置一次,到處部署」</h2>
+<p>最重要的原則:<strong>同一個映像</strong>應該一路從 development 走到 production,而不是每個環境重建一次。因為重建可能得到不同的結果。這個原則是第 5 課的基礎。</p>
+<p>準備好了就開始安裝 Workflow Plane。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="認識 Workflow Plane" duration="4">
+        <p>Workflow Plane 是 OpenChoreo 專門跑「流程」的地方,負責 CI 建置、測試與平台定義的任務。它底層使用 <strong>Argo Workflows</strong>,並搭配一個本機用的 <strong>container registry</strong>。</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>元件</p>
+</td><td colspan="1" rowspan="1"><p>角色</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>ClusterWorkflow</strong>(控制平面)</p>
+</td><td colspan="1" rowspan="1"><p>開發者看到的「流程模板」,定義參數 schema 與要產生的 Argo Workflow</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>WorkflowRun</strong>(控制平面)</p>
+</td><td colspan="1" rowspan="1"><p>一次實際執行,帶入參數</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Argo Workflow</strong>(Workflow Plane)</p>
+</td><td colspan="1" rowspan="1"><p>真正跑建置的 Pod</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>ClusterWorkflowTemplate</strong>(Workflow Plane)</p>
+</td><td colspan="1" rowspan="1"><p>各步驟的可重用模板</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Registry</strong></p>
+</td><td colspan="1" rowspan="1"><p>存放建好的映像</p>
+</td></tr>
+</table>
+<h2 is-upgraded>內建的 ClusterWorkflow</h2>
+<p>你的叢集在安裝時就已經有這些建置器,查看它們:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get clusterworkflow
+</code></pre>
+<p>預期看到 <code>dockerfile-builder</code>、<code>paketo-buildpacks-builder</code>、<code>gcp-buildpacks-builder</code>、<code>ballerina-buildpack-builder</code>。本課使用 <code>dockerfile-builder</code>,也就是用專案內的 Dockerfile 建置。</p>
+<p>Positive : 開發者只需要填「Git 網址、分支、Dockerfile 路徑」這些參數,不用寫 CI 設定檔。要用什麼工具建置,是平台工程師透過 ClusterWorkflow 決定的。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="安裝 Workflow Plane" duration="10">
+        <p>Negative : 如果你是用第 1 課的 Quick Start 容器,只要在容器內執行 <code>./install.sh --version v1.3.1 --with-build</code> 就完成了,可以直接跳到下一節。以下是在既有 k3d 叢集手動安裝的步驟,對應官方文件的 Step 6。</p>
+<h2 is-upgraded>1. 建立 namespace 並複製 CA</h2>
+<pre><code language="language-bash" class="language-bash">kubectl create namespace openchoreo-workflow-plane --dry-run=client -o yaml | kubectl apply -f -
+CA_CRT=$(kubectl get secret cluster-gateway-ca \
+  -n openchoreo-control-plane -o jsonpath=&#39;{.data.ca\.crt}&#39; | base64 -d)
+kubectl create configmap cluster-gateway-ca \
+  --from-literal=ca.crt=&#34;$CA_CRT&#34; \
+  -n openchoreo-workflow-plane --dry-run=client -o yaml | kubectl apply -f -
+</code></pre>
+<h2 is-upgraded>2. 安裝 container registry</h2>
+<pre><code language="language-bash" class="language-bash">helm repo add twuni https://twuni.github.io/docker-registry.helm &amp;&amp; helm repo update
+helm upgrade --install registry twuni/docker-registry \
+  --namespace openchoreo-workflow-plane \
+  --create-namespace \
+  --values https://raw.githubusercontent.com/openchoreo/openchoreo/release-v1.3/install/k3d/single-cluster/values-registry.yaml
+</code></pre>
+<h2 is-upgraded>3. 安裝 Workflow Plane</h2>
+<pre><code language="language-bash" class="language-bash">helm upgrade --install openchoreo-workflow-plane oci://ghcr.io/openchoreo/helm-charts/openchoreo-workflow-plane \
+  --version 1.3.1 \
+  --namespace openchoreo-workflow-plane \
+  --values https://raw.githubusercontent.com/openchoreo/openchoreo/release-v1.3/install/k3d/single-cluster/values-wp.yaml
+</code></pre>
+<h2 is-upgraded>4. 安裝建置步驟模板</h2>
+<p>這些是 Argo 的 ClusterWorkflowTemplate,定義每個建置步驟。在 k3d 上,發佈步驟會推到本機 registry <code>host.k3d.internal:10082</code>:</p>
+<pre><code language="language-bash" class="language-bash">R=https://raw.githubusercontent.com/openchoreo/openchoreo/release-v1.3/samples/getting-started
+kubectl apply \
+  -f $R/workflow-templates/checkout-source.yaml \
+  -f $R/workflow-templates.yaml \
+  -f $R/workflow-templates/publish-image-k3d.yaml \
+  -f $R/workflow-templates/generate-workload-k3d.yaml
+</code></pre>
+<h2 is-upgraded>5. 向控制平面註冊</h2>
+<p>等待 agent 憑證就緒,再建立 <code>ClusterWorkflowPlane</code>:</p>
+<pre><code language="language-bash" class="language-bash">kubectl wait -n openchoreo-workflow-plane \
+  --for=condition=Ready certificate/cluster-agent-workflowplane-tls --timeout=120s
+AGENT_CA=$(kubectl get secret cluster-agent-tls \
+  -n openchoreo-workflow-plane -o jsonpath=&#39;{.data.ca\.crt}&#39; | base64 -d)
+kubectl apply -f - &lt;&lt;EOF
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterWorkflowPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  clusterAgent:
+    clientCA:
+      value: |
+$(echo &#34;$AGENT_CA&#34; | sed &#39;s/^/        /&#39;)
+  secretStoreRef:
+    name: default
+EOF
+</code></pre>
+<h2 is-upgraded>驗證</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get pods -n openchoreo-workflow-plane
+kubectl get clusterworkflowplane
+</code></pre>
+<p>應該看到 <code>argo-server</code>、<code>argo-workflow-controller</code>、<code>cluster-agent-workflowplane</code>、<code>registry</code> 四個 Pod 都是 Running。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="撰寫 Component 與 WorkflowRun" duration="6">
+        <p>建立 <code>greeting-service.yaml</code>(取自官方 <code>samples/from-source/services/go-docker-greeter</code>):</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: greeting-service
+  namespace: default
+spec:
+  owner:
+    projectName: default
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service
+  autoDeploy: true
+  workflow:
+    kind: ClusterWorkflow
+    name: dockerfile-builder
+    parameters:
+      repository:
+        url: &#34;https://github.com/openchoreo/sample-workloads&#34;
+        revision:
+          branch: &#34;main&#34;
+        appPath: &#34;/service-go-greeter&#34;
+      docker:
+        context: &#34;/service-go-greeter&#34;
+        filePath: &#34;/service-go-greeter/Dockerfile&#34;
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: WorkflowRun
+metadata:
+  name: greeting-service-build-01
+  labels:
+    openchoreo.dev/project: &#34;default&#34;
+    openchoreo.dev/component: &#34;greeting-service&#34;
+spec:
+  workflow:
+    kind: ClusterWorkflow
+    name: dockerfile-builder
+    parameters:
+      repository:
+        url: &#34;https://github.com/openchoreo/sample-workloads&#34;
+        revision:
+          branch: &#34;main&#34;
+        appPath: &#34;/service-go-greeter&#34;
+      docker:
+        context: &#34;/service-go-greeter&#34;
+        filePath: &#34;/service-go-greeter/Dockerfile&#34;
+</code></pre>
+<h2 is-upgraded>與第 3 課的差異</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>第 3 課(預建映像)</p>
+</td><td colspan="1" rowspan="1"><p>第 4 課(從原始碼)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>手寫 Workload,指定 <code>image</code></p>
+</td><td colspan="1" rowspan="1"><p><strong>不寫 Workload</strong>,建置完成後自動產生</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>沒有 <code>workflow</code></p>
+</td><td colspan="1" rowspan="1"><p>Component 帶 <code>spec.workflow</code> 指定建置器與參數</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>沒有 WorkflowRun</p>
+</td><td colspan="1" rowspan="1"><p>用 WorkflowRun 觸發一次建置</p>
+</td></tr>
+</table>
+<p>Positive : <code>WorkflowRun</code> 的 labels(<code>openchoreo.dev/project</code>、<code>openchoreo.dev/component</code>)把這次建置歸屬到某個 Component。建置成功後,平台據此把新映像接回該 Component。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="觸發並觀察建置" duration="12">
+        <pre><code language="language-bash" class="language-bash">kubectl apply -f greeting-service.yaml
+</code></pre>
+<h2 is-upgraded>看 WorkflowRun</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get workflowrun -n default
+</code></pre>
+<h2 is-upgraded>看底層的 Argo Workflow</h2>
+<pre><code language="language-bash" class="language-bash">kubectl get workflow -n workflows-default --watch
+kubectl get pods -n workflows-default
+</code></pre>
+<h2 is-upgraded>或用 Argo Workflows UI</h2>
+<p>開啟 <a href="http://localhost:10081" target="_blank">http://localhost:10081</a> 可以看到圖形化的步驟。</p>
+<h2 is-upgraded>建置管線的四個步驟</h2>
+<table>
+<tr><td colspan="1" rowspan="1"><p>步驟</p>
+</td><td colspan="1" rowspan="1"><p>作用</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>checkout-source</code></p>
+</td><td colspan="1" rowspan="1"><p>用 <code>alpine/git</code> 把原始碼 clone 下來</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>build-image</code></p>
+</td><td colspan="1" rowspan="1"><p>用 <code>podman-runner</code> 依 Dockerfile 建置映像</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>publish-image</code></p>
+</td><td colspan="1" rowspan="1"><p>把映像推到本機 registry</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>generate-workload-cr</code></p>
+</td><td colspan="1" rowspan="1"><p>產生 Workload,把新映像接到 Component</p>
+</td></tr>
+</table>
+<p>Negative : <strong>第一次建置會比較久</strong>。<code>build-image</code> 需要拉取約數百 MB 的 <code>podman-runner</code> 映像,網路慢時 Pod 會停在 <code>PodInitializing</code>(實測在慢速網路下約 30 分鐘,在快速網路下通常幾分鐘)。可以用 <code>kubectl describe pod -n workflows-default <pod></code> 看 <code>Pulling image</code> 事件確認是不是在下載。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="部署與呼叫" duration="5">
+        <p>等部署就緒:</p>
+<pre><code language="language-bash" class="language-bash">kubectl wait --for=condition=available deployment \
+  -l openchoreo.dev/component=greeting-service -A --timeout=300s
+</code></pre>
+<p>查看 Release 與自動產生的 Workload:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get workload -n default
+kubectl get componentrelease,releasebinding -n default | grep greeting
+</code></pre>
+<p>呼叫服務(從 HTTPRoute 取出主機名稱與路徑前綴):</p>
+<pre><code language="language-bash" class="language-bash">HOSTNAME=$(kubectl get httproute -A -l openchoreo.dev/component=greeting-service \
+  -o jsonpath=&#39;{.items[0].spec.hostnames[0]}&#39;)
+PATH_PREFIX=$(kubectl get httproute -A -l openchoreo.dev/component=greeting-service \
+  -o jsonpath=&#39;{.items[0].spec.rules[0].matches[0].path.value}&#39;)
+curl &#34;http://${HOSTNAME}:19080${PATH_PREFIX}/greeter/greet&#34;
+</code></pre>
+<p>預期輸出 <code>Hello, Stranger!</code>。</p>
+<p>Positive : 這個範例的端點名稱是 <code>greeter-api</code>,所以路徑前綴是 <code>/greeting-service-greeter-api</code>,和第 3 課的 <code>/my-greeter-http</code> 不同。路徑前綴由 Workload 的端點名稱決定,因此腳本直接從 HTTPRoute 讀取最保險。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="排錯:建置成功但 Pod 是 ImagePullBackOff" duration="3">
+        <p>建置步驟全部 Completed,但 <code>kubectl describe pod</code> 出現:</p>
+<pre><code>failed to resolve reference &#34;host.k3d.internal:10082/...&#34;: lookup host.k3d.internal: no such host
+</code></pre>
+<p>原因:建置 Pod 透過 CoreDNS 能解析 <code>host.k3d.internal</code>,所以推送成功;但<strong>節點本身的 containerd</strong> 讀的是節點的 <code>/etc/hosts</code>,若節點容器重啟過,k3d 注入的這一行可能消失。</p>
+<p>檢查並補回(把 IP 換成你的 docker network 閘道):</p>
+<pre><code language="language-bash" class="language-bash">NODE=k3d-openchoreo-server-0
+docker exec $NODE cat /etc/hosts | grep host.k3d.internal
+GW=$(docker network inspect k3d-openchoreo --format &#39;&#123;&#123;(index .IPAM.Config 0).Gateway}}&#39;)
+docker exec $NODE sh -c &#34;grep -q host.k3d.internal /etc/hosts || echo &#39;$GW host.k3d.internal&#39; &gt;&gt; /etc/hosts&#34;
+kubectl delete pod -n dp-default-default-development-f8e58905 -l openchoreo.dev/component=greeting-service
+</code></pre>
+<p>Negative : 這個修正在節點容器再次重啟後會消失。用第 1 課的 Quick Start 容器安裝的環境通常不會遇到。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="清理" duration="1">
+        <pre><code language="language-bash" class="language-bash">kubectl delete -f greeting-service.yaml
+</code></pre>
+<p>Workflow Plane 可以保留,後面的課程還會用到。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li>CI 與 CD 的差別?本課屬於哪一個?</li>
+<li>為什麼建置要放在獨立的 Workflow Plane?</li>
+<li>ClusterWorkflow 與 WorkflowRun 的關係?</li>
+<li>建置成功但 Pod 是 ImagePullBackOff 且訊息是 <code>lookup host.k3d.internal: no such host</code>,原因與修法?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>CI 負責整合與建置(原始碼 → 映像),CD 負責把成品送到各環境。本課是 CI。</li>
+<li>建置會執行他人撰寫的指令,風險高且吃資源;獨立後可安全隔離、不拖慢線上服務,也能單獨擴展。</li>
+<li>ClusterWorkflow 像類別或函式定義(模板與參數 schema),WorkflowRun 像一次實際呼叫(帶入參數執行一次)。</li>
+<li>節點的 <code>/etc/hosts</code> 缺少 <code>host.k3d.internal</code>,建置 Pod 走 CoreDNS 能解析所以推送成功,但節點 containerd 解析不到。把閘道 IP 補回節點 <code>/etc/hosts</code> 後重建 Pod。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="恭喜與下一步" duration="1">
+        <p>你已經:</p>
+<ul>
+<li>✅ 安裝並註冊了 Workflow Plane</li>
+<li>✅ 用 Component + WorkflowRun 從原始碼建置映像</li>
+<li>✅ 理解 checkout → build → publish → generate-workload 的管線</li>
+<li>✅ 部署並呼叫了剛建好的服務</li>
+</ul>
+<h2 is-upgraded>延伸閱讀</h2>
+<ul>
+<li><a href="https://openchoreo.dev/docs/getting-started/try-it-out/on-k3d-locally/" target="_blank">Run Locally on K3d(Step 6)</a></li>
+<li><a href="https://openchoreo.dev/docs/developer-guide/projects-and-components/overview/" target="_blank">Projects and Components</a></li>
+</ul>
+<h2 is-upgraded>下一課</h2>
+<p><strong>05:多環境與 Promotion</strong> — 把同一個 Release 從 development 晉升到 staging、production。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

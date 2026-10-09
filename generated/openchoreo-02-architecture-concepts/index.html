@@ -1,0 +1,295 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>OpenChoreo 實戰 02:架構與核心概念</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="openchoreo-02-architecture-concepts"
+                  title="OpenChoreo 實戰 02:架構與核心概念"
+                  environment="web"
+                  feedback-link="https://github.com/openchoreo/openchoreo/issues">
+    
+      <google-codelab-step label="概覽" duration="2">
+        <h2 is-upgraded>先決條件</h2>
+<ul>
+<li>已完成 <strong>01:5 分鐘跑起 OpenChoreo</strong>,叢集仍在運行</li>
+<li>本機已安裝 <code>kubectl</code>,且能連到 k3d 叢集(或在 Dev Container 內操作)</li>
+</ul>
+<h2 is-upgraded>你會學到</h2>
+<ul>
+<li>OpenChoreo 的五種 Plane 各自負責什麼</li>
+<li>開發者資源與平台資源的分工</li>
+<li>用 <code>kubectl</code> 把概念對應到真實的資源</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="先備知識:Kubernetes 的「期望狀態」模型" duration="8">
+        <p>要看懂 OpenChoreo 的架構,必須先理解 Kubernetes 一個最核心的設計。</p>
+<h2 is-upgraded>命令式 vs 宣告式</h2>
+<table>
+<tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>命令式(Imperative)</p>
+</td><td colspan="1" rowspan="1"><p>宣告式(Declarative)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>你說什麼</p>
+</td><td colspan="1" rowspan="1"><p>「啟動 3 個副本」</p>
+</td><td colspan="1" rowspan="1"><p>「我要有 3 個副本」</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>重複執行</p>
+</td><td colspan="1" rowspan="1"><p>可能多啟動一次</p>
+</td><td colspan="1" rowspan="1"><p>結果相同,安全</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>出狀況</p>
+</td><td colspan="1" rowspan="1"><p>你必須自己發現並處理</p>
+</td><td colspan="1" rowspan="1"><p>系統自己補回來</p>
+</td></tr>
+</table>
+<p>Kubernetes 是宣告式的:你描述<strong>期望狀態(desired state)</strong>,系統負責讓**實際狀態(actual state)**追上它。</p>
+<h2 is-upgraded>調和迴圈(Reconciliation Loop)</h2>
+<p>負責「讓實際追上期望」的程式叫 <strong>控制器(Controller)</strong>,它永遠在跑一個迴圈:</p>
+<pre><code>        ┌──────────────────────────────┐
+        ▼                              │
+  觀察實際狀態 ──▶ 和期望狀態比較 ──▶ 有差異就採取行動 ──┘
+</code></pre>
+<p>例子:你宣告 <code>replicas: 3</code>,但有一個 Pod 當機了。控制器發現「實際 2 個、期望 3 個」,就補啟動一個。你完全不用介入。</p>
+<h2 is-upgraded>CRD:擴充 Kubernetes 的詞彙</h2>
+<p>Kubernetes 內建的資源種類(Pod、Deployment...)是固定的。<strong>CRD(CustomResourceDefinition)</strong> 讓你新增自己的資源種類,例如 <code>Component</code>。</p>
+<p>只有 CRD 還不夠,還需要一個懂得處理它的控制器。這個「CRD + 控制器」的組合就是 <strong>Operator 模式</strong>。</p>
+<p><strong>OpenChoreo 本質上就是一組 CRD 加上一群控制器。</strong> 第 1 課你在叢集裡看到的 <code>controller-manager</code>,就是這些控制器所在的地方。你寫 <code>Component</code>,控制器負責把它變成真正的 Deployment、Service 等資源。</p>
+<p>Positive : 這解釋了為什麼 OpenChoreo 和 GitOps 工具天生合得來(第 6 課):兩者都建立在「宣告期望狀態、持續調和」的同一個模型上。</p>
+<h2 is-upgraded>為什麼要拆成多個 Plane?</h2>
+<p>「Plane」可以理解成「平面」或「層」。OpenChoreo 把不同職責放在不同的 Plane,理由和大型組織的分工很像:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>類比</p>
+</td><td colspan="1" rowspan="1"><p>對應</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>公司總部:制定規則、管理所有分店</p>
+</td><td colspan="1" rowspan="1"><p>Control Plane</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>分店:真正服務客人的地方</p>
+</td><td colspan="1" rowspan="1"><p>Data Plane</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>中央廚房:大量準備共用的東西</p>
+</td><td colspan="1" rowspan="1"><p>Workflow Plane(建置)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>品管與監視中心</p>
+</td><td colspan="1" rowspan="1"><p>Observability Plane</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>櫃檯與服務窗口</p>
+</td><td colspan="1" rowspan="1"><p>Experience Plane(CLI 與入口網站)</p>
+</td></tr>
+</table>
+<p>拆開的好處:</p>
+<ul>
+<li><strong>安全隔離</strong>:跑使用者程式的 Data Plane,不需要有建置或管理的高權限</li>
+<li><strong>獨立擴展與故障隔離</strong>:建置很吃資源,不該拖垮正在服務的應用</li>
+<li><strong>多叢集</strong>:一個 Control Plane 可以管理分佈在不同區域、不同雲的多個 Data Plane</li>
+</ul>
+<p>在本機實驗時,所有 Plane 擠在同一個叢集;正式環境可以拆開。概念不變。</p>
+<h2 is-upgraded>領域驅動設計(DDD)的「界限上下文」</h2>
+<p>下面會提到 <strong>Project 是一個 bounded context</strong>。這是領域驅動設計的詞彙:把「彼此關係緊密、共同完成一個商業能力」的東西圈成一個邊界。例如「訂單」和「付款」可能各自是一個 Project。邊界內可以自由溝通,跨邊界則要透過明確的介面。這也是為什麼 Project 同時是安全與網路的邊界。</p>
+<p>準備好了,看看實際的架構。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="五大 Plane" duration="5">
+        <p>OpenChoreo 採模組化多 Plane 架構,各 Plane 彼此獨立,可以跑在同一個或不同的叢集。</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Plane</p>
+</td><td colspan="1" rowspan="1"><p>角色</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Control Plane</strong></p>
+</td><td colspan="1" rowspan="1"><p>中央協調者,持續把「期望狀態」調和(reconcile)到其他 Plane</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Experience Plane</strong></p>
+</td><td colspan="1" rowspan="1"><p>提供有權限控管的介面:<code>occ</code> CLI 與 Backstage 入口網站</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Data Plane</strong></p>
+</td><td colspan="1" rowspan="1"><p>隔離、可觀測的執行環境與閘道,真正跑你的應用</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Workflow Plane</strong></p>
+</td><td colspan="1" rowspan="1"><p>執行 CI 建置、測試、GitOps 流程與平台定義的任務(例如佈建資源)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Observability Plane</strong></p>
+</td><td colspan="1" rowspan="1"><p>收集並彙整日誌、指標與 OpenTelemetry Tracing</p>
+</td></tr>
+</table>
+<p>Positive : 在第 1 課的本機安裝裡,這些 Plane 全部壓在同一個 k3d 叢集上;正式環境可以拆開。Workflow 與 Observability Plane 就是 <code>--with-build</code>、<code>--with-observability</code> 所啟用的部分。</p>
+<h2 is-upgraded>兩種 API 兩種角色</h2>
+<ul>
+<li><strong>Platform API</strong>:平台工程師宣告平台設定(環境、元件類型、流程等)</li>
+<li><strong>Developer API</strong>:開發者宣告自己的資源(Project、Component、Workload 等)</li>
+</ul>
+<p>這個分工是 OpenChoreo 的核心想法:平台工程師定義<strong>護欄與模板</strong>,開發者在護欄內<strong>自助</strong>。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="開發者資源" duration="7">
+        <p>資源階層:</p>
+<pre><code>Namespace
+└── Project
+    └── Component
+        └── Workload
+</code></pre>
+<h2 is-upgraded>Project</h2>
+<p>一個 <strong>bounded context</strong>(領域驅動設計的概念),把同一個商業能力的 Components 分組,是程式碼擁有權、部署與營運的邊界。Project 對應到隔離的 namespace、網路邊界與安全政策;同一 Project 內的 Components 可以自由互相通訊。</p>
+<h2 is-upgraded>Component</h2>
+<p>一個<strong>可部署的軟體單元</strong>:微服務、網站或背景工作。它由四個部分組成:</p>
+<ul>
+<li><strong>ComponentType 參照</strong>:格式為 <code>{workloadType}/{名稱}</code>,如 <code>deployment/service</code></li>
+<li><strong>Parameters</strong>:符合 ComponentType schema 的參數,跨環境一致</li>
+<li><strong>Traits</strong>:附加能力(儲存、監控...),可多次實例化</li>
+<li><strong>Workflow 設定</strong>(選用):指定如何從原始碼建置</li>
+</ul>
+<h2 is-upgraded>Workload</h2>
+<p>Component 的<strong>執行期合約</strong>:描述「需要什麼」,而不是「平台怎麼提供」。包含:</p>
+<ul>
+<li><strong>Container</strong>:映像、指令、參數、環境變數</li>
+<li><strong>Endpoints</strong>:對外暴露的埠與協定(HTTP、gRPC、GraphQL、Websocket、TCP、UDP)</li>
+<li><strong>Dependencies</strong>:對其他 Component 端點的依賴,或對同 Project 內 Resource 的依賴</li>
+</ul>
+<h2 is-upgraded>Resource 與 WorkflowRun</h2>
+<ul>
+<li><strong>Resource</strong>:Project 內的受管基礎設施宣告(資料庫、佇列、快取...)</li>
+<li><strong>WorkflowRun</strong>:Workflow 的一次執行,記錄參數、狀態與歸屬的 Component/Project</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="平台資源" duration="4">
+        <p>由平台工程師維護:</p>
+<ul>
+<li><strong>ComponentType / ClusterComponentType</strong>:Component 的模板,決定它最終會產生哪些 Kubernetes 資源</li>
+<li><strong>Trait / ClusterTrait</strong>:可重用的附加能力</li>
+<li><strong>Workflow</strong>:建置等流程的模板</li>
+<li><strong>Environment</strong>:一個部署階段(development、staging、production...),綁定到一個 DataPlane</li>
+<li><strong>DataPlane</strong>:應用實際執行的地方,含閘道設定</li>
+</ul>
+<p>Positive : 帶有 <strong>Cluster</strong> 前綴的類型(如 <code>ClusterComponentType</code>)是叢集範圍的共用版本,可跨 namespace 使用;沒有前綴的是 namespace 範圍。</p>
+<h2 is-upgraded>發佈模型</h2>
+<p>OpenChoreo 用<strong>不可變的 Release</strong> 管理變更:</p>
+<ol type="1">
+<li>Component 變更 → 控制器產生不可變的 <strong>ComponentRelease</strong></li>
+<li>每個環境有一個 <strong>ReleaseBinding</strong>,把某個 Release「釘」在該環境</li>
+<li><strong>Promotion(晉升)</strong> 就是把釘選指向較新的 Release</li>
+</ol>
+<p>環境專屬的設定放在 ReleaseBinding 的 <code>environmentConfigs</code>,而不是 Component 的 Parameters。這個模型第 5 課會深入。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="動手觀察" duration="7">
+        <p>把概念對應到真實叢集。先看你有哪些 OpenChoreo 的 CRD:</p>
+<pre><code language="language-bash" class="language-bash">kubectl api-resources --api-group=openchoreo.dev
+</code></pre>
+<p>查看已有的 Project、Environment、Component:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get project,environment,component -A
+</code></pre>
+<p>用 <code>occ</code> 看同樣的事(需先安裝並登入,見第 3 課):</p>
+<pre><code language="language-bash" class="language-bash">occ namespace list
+occ project list -n default
+occ component list -n default
+</code></pre>
+<h2 is-upgraded>找出資料層真正的 Kubernetes 資源</h2>
+<p>Control Plane 裡的 Component 只是「宣告」,實際的 Deployment、Service 等在 Data Plane 的獨立 namespace:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get ns | grep dp-
+kubectl get deployment,svc -A -l openchoreo.dev/component=react-starter
+</code></pre>
+<p>Negative : 如果最後一個指令沒有輸出,可能是 label 或 Component 名稱和你的環境不同。先用 <code>kubectl get component -A</code> 確認名稱。這些 label 與 namespace 命名是依官方文件整理,請以你叢集的實際輸出為準。</p>
+<h2 is-upgraded>思考題</h2>
+<ol type="1">
+<li><code>react-starter</code> 在 Control Plane 與 Data Plane 各留下了哪些資源?</li>
+<li>為什麼開發者不直接寫 Deployment,而是寫 Component + Workload?</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="自我檢核" duration="4">
+        <p>試著不看上文回答下面的問題;答不出來的,回頭看對應的章節。</p>
+<ol type="1">
+<li>宣告式與命令式差在哪?請用 <code>replicas: 3</code> 舉例。</li>
+<li>OpenChoreo 本質上是由什麼組成的?</li>
+<li>為什麼要把 Control Plane 和 Data Plane 分開?至少說出兩個理由。</li>
+<li>Project 為什麼同時是「領域邊界」和「安全邊界」?</li>
+</ol>
+<h2 is-upgraded>參考答案</h2>
+<ol type="1">
+<li>宣告式描述「我要 3 個副本」,系統持續調和;即使有 Pod 當機也會補回來。命令式是「啟動 3 個」,重複執行可能多啟動。</li>
+<li>一組 CRD 加上處理它們的控制器(Operator 模式)。</li>
+<li>安全隔離(跑使用者程式的地方不需要管理高權限)、故障與資源隔離、一個控制平面可管理多個資料平面或多叢集。</li>
+<li>它對應 DDD 的 bounded context:同一能力的元件圈在一起,並對應到獨立 namespace、網路與安全政策,邊界內自由溝通。</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="小結" duration="1">
+        <table>
+<tr><td colspan="1" rowspan="1"><p>概念</p>
+</td><td colspan="1" rowspan="1"><p>一句話</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Plane</p>
+</td><td colspan="1" rowspan="1"><p>五種職責分離的執行層</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Project</p>
+</td><td colspan="1" rowspan="1"><p>領域邊界,Component 的分組</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Component</p>
+</td><td colspan="1" rowspan="1"><p>可部署單元 = 類型 + 參數 + Trait + Workflow</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Workload</p>
+</td><td colspan="1" rowspan="1"><p>執行期合約:容器、端點、依賴</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Environment</p>
+</td><td colspan="1" rowspan="1"><p>綁定 DataPlane 的部署階段</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Release / ReleaseBinding</p>
+</td><td colspan="1" rowspan="1"><p>不可變版本與其在各環境的釘選</p>
+</td></tr>
+</table>
+<h2 is-upgraded>延伸閱讀</h2>
+<ul>
+<li><a href="https://openchoreo.dev/docs/overview/architecture" target="_blank">Architecture</a></li>
+<li><a href="https://openchoreo.dev/docs/concepts/developer-abstractions/" target="_blank">Developer Abstractions</a></li>
+<li><a href="https://openchoreo.dev/docs/platform-engineer-guide/deployment-topology/" target="_blank">Deployment Topology</a></li>
+</ul>
+<h2 is-upgraded>下一課</h2>
+<p><strong>03:部署你的第一個 Component</strong> — 自己寫 YAML,用 <code>occ</code> 與 <code>kubectl</code> 部署。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

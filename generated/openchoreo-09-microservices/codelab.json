@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2026-10-09T22:57:46+08:00",
+  "id": "openchoreo-09-microservices",
+  "duration": 62,
+  "title": "OpenChoreo 實戰 09:微服務實戰",
+  "summary": "部署 Google 的 11 個服務微服務範例,學習 Project、Resource、服務依賴注入,並練習從症狀定位故障的排錯流程",
+  "source": "tutorials/09-microservices.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "openchoreo",
+    "kubernetes",
+    "microservices"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://github.com/openchoreo/openchoreo/issues",
+  "url": "openchoreo-09-microservices"
+}

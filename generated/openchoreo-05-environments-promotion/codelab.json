@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2026-10-09T22:57:46+08:00",
+  "id": "openchoreo-05-environments-promotion",
+  "duration": 45,
+  "title": "OpenChoreo 實戰 05:多環境與 Promotion",
+  "summary": "理解 Environment、DeploymentPipeline 與 ReleaseBinding,為每個環境設定不同的副本數與環境變數,並把同一個 Release 從 development 晉升到 staging、production",
+  "source": "tutorials/05-environments-promotion.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "openchoreo",
+    "kubernetes",
+    "ci-cd"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://github.com/openchoreo/openchoreo/issues",
+  "url": "openchoreo-05-environments-promotion"
+}

@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2026-10-09T22:57:46+08:00",
+  "id": "openchoreo-07-observability",
+  "duration": 61,
+  "title": "OpenChoreo 實戰 07:可觀測性",
+  "summary": "安裝 Observability Plane,認識 OpenChoreo 的日誌、指標、追蹤與事件收集架構,並直接查詢底層資料確認管線運作",
+  "source": "tutorials/07-observability.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "openchoreo",
+    "kubernetes",
+    "observability"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://github.com/openchoreo/openchoreo/issues",
+  "url": "openchoreo-07-observability"
+}
