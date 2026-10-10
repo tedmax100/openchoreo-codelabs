@@ -27,8 +27,8 @@ Duration: 2
 * 如何用 `kubectl port-forward` 直接查底層資料來排錯
 * 追蹤(Tracing)需要什麼條件(實際驗證在第 9 課)
 
-Negative
-: 本課的 Observer API、`occ component logs` 與入口網站的觀測畫面都需要 OAuth 登入,作者在自動化環境無法完成瀏覽器登入,所以這些介面**沒有實際操作**,只有列出指令。底層的 OpenSearch 與 Prometheus 查詢則是實測過的。
+Positive
+: 本課除了底層的 OpenSearch 與 Prometheus 指令查詢外,亦完整包含登入 OpenChoreo 控制台後實測擷取的真實觀測畫面(即時日誌串流、CPU/Memory 指標圖、平台審計與成本分析)。
 
 ## 先備知識:可觀測性的三大支柱
 Duration: 10
@@ -50,6 +50,8 @@ Duration: 10
 | **指標(Metrics)** | 隨時間變化的數字 | 「整體狀況如何?趨勢?」 | CPU 使用率、每秒請求數 |
 | **追蹤(Traces)** | 一個請求經過各服務的完整路徑 | 「這個請求慢在哪裡?」 | frontend → checkout → payment |
 | **事件(Events)** | Kubernetes 的狀態變化紀錄 | 「叢集做了什麼?」 | Pod 被排程、映像拉取失敗 |
+
+![可觀測性三大支柱與事件](img/07-observability-pillars.svg)
 
 三者互補:**指標告訴你有問題,追蹤告訴你問題在哪個服務,日誌告訴你為什麼。**
 
@@ -103,11 +105,14 @@ OpenChoreo 把日誌、指標、追蹤各做成獨立的 Helm 模組,透過 **ad
 ## 架構
 Duration: 4
 
+![Observability Plane 收集、儲存與統一查詢管線全景架構](img/07-observability-pipeline.svg)
+
 | 元件 | 角色 |
 |---|---|
 | **Fluent Bit** | DaemonSet,收集每個節點上容器的日誌 |
 | **OpenSearch** | 儲存日誌、事件(與追蹤) |
 | **Prometheus + kube-state-metrics** | 收集指標 |
+
 | **OpenTelemetry Collector** | 接收 OTLP 追蹤(gRPC 4317 / HTTP 4318) |
 | **events-collector** | 把 Kubernetes 事件寫進 OpenSearch |
 | **logs / metrics / tracing adapter** | 把各後端包成統一的查詢介面 |
@@ -124,6 +129,26 @@ cAdvisor/kube-state ─▶ Prometheus ─▶ metrics-adapter    ├─▶ Observ
 
 Positive
 : OpenChoreo 的觀測是**可替換的模組**:日誌、追蹤、指標各自是一個 Helm 模組,平台團隊可以換成其他後端,只要實作對應的 adapter。
+
+### 核心 CRD:ClusterObservabilityPlane
+
+在 Kubernetes 控制平面中,Observability Plane 是透過 **`ClusterObservabilityPlane`** 宣告與註冊的:
+
+```yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterObservabilityPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  observerURL: "http://observer.openchoreo.localhost:11080"
+  clusterAgent:
+    clientCA:
+      value: "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+```
+
+* **與 Data Plane 縫合**: `ClusterDataPlane` 透過 `spec.observabilityPlaneRef` 指向此資源,自動為該資料叢集注入 Fluent Bit 收集器與標籤映射規則。
+* **統一查詢通道**: `observerURL` 是對外提供安全查詢的網關,讓前台 Backstage、`occ` CLI 與 AI MCP 客戶端能透過單一入口跨叢集檢索日誌與指標。
 
 ## 安裝 Observability Plane
 Duration: 15
@@ -346,6 +371,10 @@ occ component logs obs-demo
 occ component logs obs-demo --env development -f
 ```
 
+在入口網站的 LOGS 分頁中，亦可直接觀看 Fluent-bit 聚合至 OpenSearch 的即時日誌：
+
+![元件即時日誌檢視](img/07-component-logs.png)
+
 ## 指標
 Duration: 5
 
@@ -359,6 +388,10 @@ curl -s localhost:19090/api/v1/query \
 ```
 
 預期結果包含你的 `obs-demo-development-…` Pod 的 CPU 累計秒數。
+
+在入口網站的 METRICS 分頁中，亦可直接觀看 Prometheus 採集的 CPU 與 Memory 曲線（Limits、Requests 與實際 Usage）：
+
+![Prometheus 資源指標檢視](img/07-component-metrics.png)
 
 常用查詢:
 
@@ -416,6 +449,22 @@ Observer 只服務已通過身分驗證的使用者(入口網站、`occ`、MCP s
 ### 用 MCP 走正門查詢
 
 第 10 課會介紹如何用 Client Credentials 取得 token。有了 token,Observer 的 MCP 端點 `http://observer.openchoreo.localhost:11080/mcp` 就能查詢日誌與指標。實測 `query_component_logs` 查到了 `react-starter` 的存取日誌,`query_resource_metrics` 回傳了 CPU 與記憶體的時間序列。細節請見第 10 課。
+
+### 平台層級審計日誌 (Audit Logs) 與 成本分析 (Cost Insights)
+
+Observability Plane 不僅收集應用層的日誌,更透過內建的 `events-collector` 與 Observer API 收集全系統的**安全審計日誌**與**運算成本指標**。在登入 OpenChoreo 控制台後:
+
+#### 審計日誌 (Audit Logs)
+
+在左側導航點選 **Audit Logs**,平台會即時呈現「誰(Actor)、在何時(Time)、對哪一個專案或元件(Resource)、執行了什麼操作(Action,如 `create_project`、`delete_project`)以及是否被允許(Result)」,即便是透過 MCP AI 代理執行的操作,也會被忠實記錄供企業合規稽核:
+
+![OpenChoreo 平台安全審計日誌檢視](img/07-audit-logs.png)
+
+#### 雲端成本洞察 (Cost Insights)
+
+在左側導航點選 **Cost Insights**,平台會結合 Prometheus 資源使用量與雲端費率模型,呈現各 Project 與環境的每日資源消耗與趨勢分析:
+
+![OpenChoreo FinOps 資源成本洞察](img/07-cost-insights.png)
 
 ## 清理
 Duration: 1

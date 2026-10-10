@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 400" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="400" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">微服務連鎖故障 (Cascading Failure) 排錯演練流程</text>
+    <text class="c-sub" x="0" y="20">SRE 標準排錯思維：症狀 (Symptom) → 呼叫端日誌 → 鎖定下游相依端 → 查出根因 → 修復驗證</text>
+  </g>
+
+  <!-- 5 Step Flow -->
+  <g class="f-main" transform="translate(30, 60)">
+    <!-- Step 1: Symptom -->
+    <g transform="translate(0, 0)">
+      <rect width="145" height="250" rx="6" fill="#fce8e6" stroke="#c5221f" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#c5221f"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">1</text>
+      <text class="c-head" x="38" y="26" fill="#c5221f" font-size="11.5">發現症狀</text>
+
+      <rect x="10" y="44" width="125" height="52" rx="4" fill="#ffffff"/>
+      <text class="c-head" x="15" y="62" font-size="11" fill="#c5221f">HTTP 500 報錯</text>
+      <text class="c-text" x="15" y="78" font-size="10" fill="#5f6368">使用者訪問首頁</text>
+      <text class="c-text" x="15" y="90" font-size="10" fill="#5f6368">出現 Internal Error</text>
+
+      <text class="c-text" x="10" y="118" font-size="10" fill="#3c4043">• 外部看來首頁掛了</text>
+      <text class="c-text" x="10" y="134" font-size="10" fill="#3c4043">• 但 frontend Pod</text>
+      <text class="c-text" x="10" y="148" font-size="10" fill="#137333">  本身卻是 Running！</text>
+
+      <rect x="10" y="195" width="125" height="42" rx="3" fill="#ffffff" stroke="#c5221f"/>
+      <text class="c-text" x="72" y="212" text-anchor="middle" font-size="9.5" fill="#c5221f">連鎖故障特徵：</text>
+      <text class="c-text" x="72" y="226" text-anchor="middle" font-size="9" fill="#5f6368">下游壞掉往上蔓延</text>
+    </g>
+
+    <!-- Arrow 1 -> 2 -->
+    <line x1="145" y1="125" x2="160" y2="125" stroke="#c5221f" stroke-width="2" marker-end="url(#arrow-red)"/>
+
+    <!-- Step 2: Client Logs -->
+    <g transform="translate(160, 0)">
+      <rect width="150" height="250" rx="6" fill="#ffffff" stroke="#dadce0" stroke-width="1.2"/>
+      <circle cx="22" cy="22" r="10" fill="#e37400"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">2</text>
+      <text class="c-head" x="38" y="26" fill="#202124" font-size="11.5">呼叫端日誌</text>
+
+      <rect x="10" y="44" width="130" height="52" rx="4" fill="#fef7e0"/>
+      <text class="c-code" x="14" y="60" font-size="9">kubectl logs</text>
+      <text class="c-code" x="14" y="74" font-size="9">  -l component=</text>
+      <text class="c-code" x="14" y="88" font-size="9">  frontend</text>
+
+      <text class="c-text" x="10" y="118" font-size="10" fill="#3c4043">日誌輸出報錯：</text>
+      <rect x="8" y="124" width="134" height="60" rx="3" fill="#f1f3f4"/>
+      <text class="c-code" x="12" y="140" font-size="8.5" fill="#c5221f">could not retrieve</text>
+      <text class="c-code" x="12" y="154" font-size="8.5" fill="#c5221f">products: connection</text>
+      <text class="c-code" x="12" y="168" font-size="8.5" fill="#c5221f">refused:3550</text>
+
+      <rect x="10" y="195" width="130" height="42" rx="3" fill="#fef7e0"/>
+      <text class="c-text" x="75" y="212" text-anchor="middle" font-size="9.5" fill="#b06000">鎖定嫌疑目標：</text>
+      <text class="c-code" x="75" y="228" text-anchor="middle" font-size="9.5" fill="#b06000">productcatalog</text>
+    </g>
+
+    <!-- Arrow 2 -> 3 -->
+    <line x1="310" y1="125" x2="325" y2="125" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+    <!-- Step 3: Inspect Downstream -->
+    <g transform="translate(325, 0)">
+      <rect width="150" height="250" rx="6" fill="#ffffff" stroke="#dadce0" stroke-width="1.2"/>
+      <circle cx="22" cy="22" r="10" fill="#1a73e8"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">3</text>
+      <text class="c-head" x="38" y="26" fill="#202124" font-size="11.5">檢查被呼叫端</text>
+
+      <rect x="10" y="44" width="130" height="52" rx="4" fill="#e8f0fe"/>
+      <text class="c-code" x="14" y="60" font-size="9">kubectl get pods</text>
+      <text class="c-code" x="14" y="74" font-size="9">  -l component=</text>
+      <text class="c-code" x="14" y="88" font-size="9">  productcatalog</text>
+
+      <text class="c-text" x="10" y="118" font-size="10" fill="#3c4043">叢集回傳狀態：</text>
+      <rect x="8" y="124" width="134" height="60" rx="3" fill="#fce8e6"/>
+      <text class="c-head" x="14" y="145" font-size="10.5" fill="#c5221f">No resources</text>
+      <text class="c-head" x="14" y="162" font-size="10.5" fill="#c5221f">found in ns!</text>
+      <text class="c-text" x="14" y="176" font-size="9" fill="#5f6368">(Pod 根本不存在)</text>
+
+      <rect x="10" y="195" width="130" height="42" rx="3" fill="#e8f0fe"/>
+      <text class="c-text" x="75" y="212" text-anchor="middle" font-size="9.5" fill="#174ea6">繼續追查部署：</text>
+      <text class="c-code" x="75" y="228" text-anchor="middle" font-size="9" fill="#174ea6">get deployment</text>
+    </g>
+
+    <!-- Arrow 3 -> 4 -->
+    <line x1="475" y1="125" x2="490" y2="125" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Step 4: Root Cause -->
+    <g transform="translate(490, 0)">
+      <rect width="140" height="250" rx="6" fill="#fef7e0" stroke="#f9ab00" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#b06000"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">4</text>
+      <text class="c-head" x="38" y="26" fill="#b06000" font-size="11.5">找出根因</text>
+
+      <rect x="10" y="44" width="120" height="52" rx="4" fill="#ffffff"/>
+      <text class="c-text" x="14" y="60" font-size="10" fill="#3c4043">檢視副本數：</text>
+      <text class="c-code" x="14" y="78" font-size="11" fill="#c5221f" font-weight="700">replicas: 0 / 0</text>
+
+      <text class="c-text" x="10" y="118" font-size="10" fill="#3c4043">根因定讞：</text>
+      <text class="c-text" x="10" y="134" font-size="10" fill="#3c4043">• 服務被縮容至 0</text>
+      <text class="c-text" x="10" y="150" font-size="10" fill="#3c4043">• 無任何 Pod 接客</text>
+      <text class="c-text" x="10" y="166" font-size="10" fill="#3c4043">• 網路連線被拒</text>
+
+      <rect x="10" y="195" width="120" height="42" rx="3" fill="#ffffff" stroke="#f9ab00"/>
+      <text class="c-text" x="70" y="212" text-anchor="middle" font-size="9.5" fill="#b06000">決定修復方案：</text>
+      <text class="c-text" x="70" y="226" text-anchor="middle" font-size="9" fill="#137333">擴容副本數為 1</text>
+    </g>
+
+    <!-- Arrow 4 -> 5 -->
+    <line x1="630" y1="125" x2="645" y2="125" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- Step 5: Fix & Verify -->
+    <g transform="translate(645, 0)">
+      <rect width="135" height="250" rx="6" fill="#e6f4ea" stroke="#137333" stroke-width="1.8"/>
+      <circle cx="22" cy="22" r="10" fill="#137333"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">5</text>
+      <text class="c-head" x="38" y="26" fill="#137333" font-size="11.5">修復與驗證</text>
+
+      <rect x="8" y="44" width="119" height="52" rx="4" fill="#ffffff"/>
+      <text class="c-code" x="12" y="60" font-size="8.5">kubectl scale</text>
+      <text class="c-code" x="12" y="74" font-size="8.5">  deployment ...</text>
+      <text class="c-code" x="12" y="88" font-size="8.5" fill="#137333">  --replicas=1</text>
+
+      <text class="c-text" x="8" y="118" font-size="10" fill="#3c4043">驗證復原指標：</text>
+      <text class="c-text" x="8" y="134" font-size="10" fill="#137333">✓ Pod 重新 Running</text>
+      <text class="c-text" x="8" y="150" font-size="10" fill="#137333">✓ gRPC 連線恢復</text>
+      <text class="c-text" x="8" y="166" font-size="10" fill="#137333">✓ 首頁回傳 200 OK</text>
+
+      <rect x="8" y="195" width="119" height="42" rx="3" fill="#137333"/>
+      <text class="c-head" x="67" y="215" text-anchor="middle" font-size="11" fill="#ffffff">服務完全康復！</text>
+      <text class="c-text" x="67" y="230" text-anchor="middle" font-size="9" fill="#ffffff">排錯驗證成功</text>
+    </g>
+  </g>
+
+  <!-- Golden Signals Callout -->
+  <g class="f-main" transform="translate(30, 325)">
+    <rect width="780" height="55" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="15" y="22" fill="#202124" font-size="12">💡 SRE 四個黃金訊號在排錯中的對應：</text>
+    <text class="c-text" x="15" y="40" fill="#3c4043" font-size="11">
+      <tspan font-weight="700">延遲 (Latency)</tspan>：請求是否超時 • <tspan font-weight="700">流量 (Traffic)</tspan>：是否有流量打入 • <tspan font-weight="700">錯誤 (Errors)</tspan>：HTTP 500 / Connection Refused • <tspan font-weight="700">飽和度 (Saturation)</tspan>：副本數為 0
+    </text>
+  </g>
+
+</svg>

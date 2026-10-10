@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">平台護欄 (Guardrails) 與 CEL 策略驗證機制 (Policy-as-Code)</text>
+    <text class="c-sub" x="0" y="20">Google Common Expression Language (CEL) 在 API 准入階段提前攔截違規配置</text>
+  </g>
+
+  <!-- Flow pipeline: Developer submit -> CEL Gate -> Allowed/Blocked -->
+  <!-- Step 1: Submission -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="180" height="340" rx="8" fill="#f8f9fa" stroke="#dadce0" stroke-width="1.5"/>
+    <text class="c-head" x="90" y="26" text-anchor="middle" fill="#202124">1. 提交設定</text>
+    <text class="c-text" x="90" y="44" text-anchor="middle" font-size="11" fill="#5f6368">開發者 apply YAML</text>
+
+    <!-- Case A -->
+    <g transform="translate(10, 60)">
+      <rect width="160" height="90" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="8" y="20" font-size="11" fill="#202124">提交案 A (違規暴露)</text>
+      <text class="c-code" x="8" y="38" font-size="9.5">type: internal-service</text>
+      <text class="c-code" x="8" y="54" font-size="9.5" fill="#d93025">endpoints:</text>
+      <text class="c-code" x="8" y="70" font-size="9.5" fill="#d93025">  visibility: external</text>
+    </g>
+
+    <!-- Case B -->
+    <g transform="translate(10, 160)">
+      <rect width="160" height="75" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="8" y="20" font-size="11" fill="#202124">提交案 B (缺必填)</text>
+      <text class="c-code" x="8" y="38" font-size="9.5">type: internal-service</text>
+      <text class="c-text" x="8" y="56" font-size="10" fill="#d93025">未填寫 team 參數！</text>
+    </g>
+
+    <!-- Case C -->
+    <g transform="translate(10, 245)">
+      <rect width="160" height="80" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="8" y="20" font-size="11" fill="#137333">提交案 C (合法合規)</text>
+      <text class="c-code" x="8" y="38" font-size="9.5">team: backend-core</text>
+      <text class="c-code" x="8" y="54" font-size="9.5">visibility: project</text>
+      <text class="c-text" x="8" y="70" font-size="9.5" fill="#137333">完全符合安全政策</text>
+    </g>
+  </g>
+
+  <!-- Arrow to CEL Engine -->
+  <line x1="210" y1="230" x2="245" y2="230" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+  <!-- Step 2: CEL Engine -->
+  <g class="f-main" transform="translate(245, 60)">
+    <rect width="320" height="340" rx="8" fill="#fef7e0" stroke="#e37400" stroke-width="2"/>
+    <text class="c-head" x="160" y="26" text-anchor="middle" fill="#b06000">2. CEL 護欄驗證引擎</text>
+    <text class="c-text" x="160" y="44" text-anchor="middle" font-size="11" fill="#5f6368">無副作用、非圖靈完備的極速評估表達式</text>
+
+    <!-- Rule 1 -->
+    <g transform="translate(15, 60)">
+      <rect width="290" height="78" rx="6" fill="#ffffff" stroke="#e37400"/>
+      <text class="c-head" x="10" y="20" font-size="11" fill="#b06000">護欄規則 1：禁止內部服務對外暴露</text>
+      <text class="c-code" x="10" y="38" font-size="10" fill="#174ea6">${workload.endpoints.filter(e, </text>
+      <text class="c-code" x="10" y="52" font-size="10" fill="#174ea6">    e.visibility == 'external').size() == 0}</text>
+      <text class="c-text" x="10" y="68" font-size="9.5" fill="#d93025">若違規：阻擋並報錯「內部服務不可對外」</text>
+    </g>
+
+    <!-- Rule 2 -->
+    <g transform="translate(15, 148)">
+      <rect width="290" height="78" rx="6" fill="#ffffff" stroke="#e37400"/>
+      <text class="c-head" x="10" y="20" font-size="11" fill="#b06000">護欄規則 2：必填負責團隊參數 (Audit)</text>
+      <text class="c-code" x="10" y="38" font-size="10" fill="#174ea6">${has(parameters.team) &amp;&amp; </text>
+      <text class="c-code" x="10" y="52" font-size="10" fill="#174ea6">    parameters.team.size() &gt; 0}</text>
+      <text class="c-text" x="10" y="68" font-size="9.5" fill="#d93025">若違規：阻擋並報錯「必須指定 team」</text>
+    </g>
+
+    <!-- Schema Validation -->
+    <g transform="translate(15, 236)">
+      <rect width="290" height="88" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="10" y="20" font-size="11" fill="#202124">OpenAPI v3 Schema 檢查</text>
+      <text class="c-text" x="10" y="38" font-size="10.5" fill="#3c4043">• 型別校驗 (string / integer / boolean)</text>
+      <text class="c-text" x="10" y="54" font-size="10.5" fill="#3c4043">• 數值範圍 (minimum: 1)</text>
+      <text class="c-text" x="10" y="72" font-size="10.5" fill="#137333" font-weight="600">✓ 在 K8s 准入 (Admission) 階段即刻判定</text>
+    </g>
+  </g>
+
+  <!-- Connectors from Engine to Results -->
+  <line x1="565" y1="135" x2="600" y2="135" stroke="#d93025" stroke-width="2" marker-end="url(#arrow-red)"/>
+  <line x1="565" y1="320" x2="600" y2="320" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+  <!-- Step 3: Outcomes -->
+  <g class="f-main" transform="translate(600, 60)">
+    <rect width="210" height="340" rx="8" fill="#f8f9fa" stroke="#dadce0" stroke-width="1.5"/>
+    <text class="c-head" x="105" y="26" text-anchor="middle" fill="#202124">3. 驗證結果</text>
+
+    <!-- Blocked Box -->
+    <g transform="translate(12, 50)">
+      <rect width="186" height="135" rx="6" fill="#fce8e6" stroke="#c5221f" stroke-width="1.5"/>
+      <text class="c-head" x="12" y="24" font-size="12" fill="#c5221f">🚫 立即拒絕 (Rejected)</text>
+      <text class="c-text" x="12" y="44" font-size="10" fill="#3c4043">直接回傳錯誤訊息：</text>
+      <rect x="8" y="52" width="170" height="42" rx="3" fill="#ffffff"/>
+      <text class="c-code" x="12" y="68" font-size="8.5" fill="#c5221f">Internal services must</text>
+      <text class="c-code" x="12" y="82" font-size="8.5" fill="#c5221f">not be external!</text>
+      <text class="c-text" x="12" y="112" font-size="10" fill="#c5221f" font-weight="600">保護生產叢集不被污染</text>
+    </g>
+
+    <!-- Allowed Box -->
+    <g transform="translate(12, 205)">
+      <rect width="186" height="115" rx="6" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+      <text class="c-head" x="12" y="24" font-size="12" fill="#137333">✅ 核准放行 (Accepted)</text>
+      <text class="c-text" x="12" y="44" font-size="10" fill="#3c4043">通過所有安全策略</text>
+      <text class="c-text" x="12" y="62" font-size="10" fill="#3c4043">生成標準 Deployment &amp; Service</text>
+      <rect x="8" y="75" width="170" height="24" rx="3" fill="#ffffff"/>
+      <text class="c-text" x="93" y="91" text-anchor="middle" font-size="10" fill="#137333" font-weight="600">✓ 成功發布至 Data Plane</text>
+    </g>
+  </g>
+
+</svg>

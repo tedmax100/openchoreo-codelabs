@@ -116,11 +116,11 @@
 </td><td colspan="1" rowspan="1"><p>改回舊版次</p>
 </td></tr>
 </table>
+<p class="image-container"><img alt="Release 與 ReleaseBinding 指標模型" src="img/ff755974f890bb29.svg"></p>
 <p>這樣你就能理解:<strong>晉升不是重新建置、重新打包,只是改變指標</strong>。所以非常快、非常安全。</p>
 <h2 is-upgraded>DeploymentPipeline:有向圖</h2>
 <p>DeploymentPipeline 規定了「環境之間可以怎麼走」,本質上是一張<strong>有向圖</strong>:</p>
-<pre><code>development ──▶ staging ──▶ production
-</code></pre>
+<p class="image-container"><img alt="DeploymentPipeline 有向無環圖與階段推進" src="img/5dccd3618d10fd90.svg"></p>
 <p>它的價值是<strong>強制流程</strong>:例如規定 production 只能從 staging 來,不能從 development 直接跳過去。Project 透過 <code>deploymentPipelineRef</code> 選擇使用哪一條管線,所以同一個 Project 的所有元件遵守同一套流程。</p>
 <h2 is-upgraded>兩種「自動」</h2>
 <ul>
@@ -177,6 +177,99 @@ kubectl get deploymentpipeline -n default default -o yaml
 </td><td colspan="1" rowspan="1"><p>把某個 Release 釘在某個環境,並帶環境覆寫</p>
 </td></tr>
 </table>
+<h2 is-upgraded>Control Plane 與 Data Plane 的橋樑:Environment 與 ClusterDataPlane</h2>
+<p>在架構上,<code>Environment</code> 屬於 <strong>Control Plane</strong> 的邏輯抽象,它如何落實到具體承載流量的 K8s 叢集?關鍵在於其 <code>spec.dataPlaneRef</code> 欄位:</p>
+<pre><code language="language-bash" class="language-bash">kubectl get environment development -n default -o yaml
+</code></pre>
+<p>你會看到它精確指向一個 <code>ClusterDataPlane</code>:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: development
+spec:
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: default
+  isProduction: false
+</code></pre>
+<h3 is-upgraded>多叢集實體隔離機制</h3>
+<ul>
+<li><strong>單一控制台,多個資料叢集</strong>: 在多叢集企業環境中,<code>development</code> 可以指向測試叢集,而 <code>production</code> 指向實體隔離的生產專用 EKS/GKE 叢集(<code>ClusterDataPlane</code>)。</li>
+<li><strong>命名空間自動微隔離</strong>: 當 ReleaseBinding 生效時,OpenChoreo 控制器會透過 <code>cluster-agent</code> 在對應的 Data Plane 上自動開闢專屬命名空間:<code>dp-<namespace>-<project>-<environment>-<hash></code>(例如本課實測的 <code>dp-default-default-development-f8e58905</code>),確保不同環境的 Pod 具備嚴格的網路與資源邊界。</li>
+<li><strong>閘道與觀測平面自動綁定</strong>: 查看 <code>kubectl get clusterdataplane default -o yaml</code>,你會發現 Data Plane 不僅配置了 Envoy Proxy 監聽埠(<code>19080</code>),還宣告了 <code>observabilityPlaneRef</code>,自動將該資料平面的日誌與指標接入中樞。</li>
+</ul>
+<h3 is-upgraded>實戰拆解：<code>ClusterDataPlane</code> 核心規格與心跳機制</h3>
+<p>現在，讓我們用 <code>kubectl</code> 親自檢視這個定義整個 Data Plane 的核心 CRD：</p>
+<pre><code language="language-bash" class="language-bash">kubectl get clusterdataplane default -o yaml
+</code></pre>
+<p>你會看到類似以下的核心欄位：</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterDataPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  clusterAgent:
+    clientCA:
+      value: &#34;-----BEGIN CERTIFICATE-----\n...&#34;
+  gateway:
+    ingress:
+      external:
+        http:
+          host: openchoreoapis.localhost
+          listenerName: http
+          port: 19080
+        name: gateway-default
+        namespace: openchoreo-data-plane
+  observabilityPlaneRef:
+    kind: ClusterObservabilityPlane
+    name: default
+status:
+  agentConnection:
+    connected: true
+    connectedAgents: 1
+    lastHeartbeatTime: &#34;2026-10-10T07:36:30Z&#34;
+    message: 1 agent connected
+  conditions:
+  - status: &#34;True&#34;
+    type: Created
+</code></pre>
+<table>
+<tr><td colspan="1" rowspan="1"><p>核心區塊</p>
+</td><td colspan="1" rowspan="1"><p>作用與底層機制</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.clusterAgent.clientCA</code></p>
+</td><td colspan="1" rowspan="1"><p><strong>mTLS 零信任連線依據</strong>。Data Plane 內運行的 Agent 憑藉此 CA 簽發的客戶端憑證，向 Control Plane 建立反向 gRPC 長連線。</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.gateway.ingress.external</code></p>
+</td><td colspan="1" rowspan="1"><p><strong>Envoy 閘道拓撲規範</strong>。宣告外部請求的主機後綴（<code>openchoreoapis.localhost</code>）、負載平衡監聽埠（<code>19080</code>）以及 Envoy Proxy 所在的平台命名空間（<code>openchoreo-data-plane</code>）。</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>spec.observabilityPlaneRef</code></p>
+</td><td colspan="1" rowspan="1"><p><strong>關聯可觀測性</strong>。指名此資料平面由哪個 <code>ClusterObservabilityPlane</code> 負責抓取日誌與指標。</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><code>status.agentConnection</code></p>
+</td><td colspan="1" rowspan="1"><p><strong>連線健康度與即時心跳</strong>。顯示當前是否有 Agent 連線（<code>connected: true</code>）以及最新的心跳同步時間（<code>lastHeartbeatTime</code>）。</p>
+</td></tr>
+</table>
+<h3 is-upgraded>Data Plane 實戰排錯指南 (Troubleshooting Runbook)</h3>
+<p>當開發者反映「服務已顯示 Healthy，但在 Data Plane 透過網址連不上或噴 503」時，SRE 與維運工程師可依照以下標準四部曲進行 Data Plane 故障排查：</p>
+<ol type="1">
+<li><strong>第一關：確認跨平面通訊通道存活</strong><pre><code language="language-bash" class="language-bash">kubectl get clusterdataplane default -o jsonpath=&#39;{.status.agentConnection}&#39;
+kubectl logs -n openchoreo-data-plane -l app.kubernetes.io/name=cluster-agent-dataplane --tail=50
+</code></pre>
+若 <code>connected</code> 為 <code>false</code>，代表 Control Plane 無法向 Data Plane 下發指令，需檢查網路連線或 mTLS 憑證。</li>
+<li><strong>第二關：確認宣告式合約渲染成功</strong><pre><code language="language-bash" class="language-bash">kubectl get renderedrelease -n default
+kubectl describe renderedrelease &lt;component&gt;-&lt;environment&gt; -n default
+</code></pre>
+檢查 <code>status.conditions</code> 是否包含 <code>ResourcesApplied=True</code>。若為 False，代表 Kubernetes 原生工件在 Data Plane 套用失敗（例如映像拉取失敗或名稱衝突）。</li>
+<li><strong>第三關：確認 Envoy Gateway 與 HTTPRoute 生效</strong><pre><code language="language-bash" class="language-bash">kubectl get httproute -A
+kubectl describe httproute &lt;route-name&gt; -n dp-...
+</code></pre>
+檢查 <code>status.parents[0].conditions</code> 中的 <code>Accepted</code> 與 <code>ResolvedRefs</code> 是否皆為 <code>True</code>。若為 False，代表路徑衝突或後端 Service 找不到。</li>
+<li><strong>第四關：確認零信任 NetworkPolicy 未意外封鎖流量</strong><pre><code language="language-bash" class="language-bash">kubectl get networkpolicy -n dp-... -o yaml
+</code></pre>
+OpenChoreo 預設配置嚴格的白名單。確認 Ingress 規則是否放行了來源（Envoy 閘道或同專案依賴元件）。</li>
+</ol>
 
 
       </google-codelab-step>
@@ -309,6 +402,10 @@ done
   curl -s http://$e-default.openchoreoapis.localhost:19080/promo-demo-http/greeter/greet; echo &#34; &lt;- $e&#34;
 done
 </code></pre>
+<p>在入口網站的 DEPLOY 分頁中，可視覺化檢視三個環境的 Promotion 流水線：</p>
+<p class="image-container"><img alt="多環境 Promotion 交付流水線" src="img/ac204e3d074fd7ec.png"></p>
+<p>點擊特定環境卡片，可在右側側邊欄檢視目前釘選的 Release 雜湊、端點網址與 <strong>View K8s Artifacts</strong> 按鈕：</p>
+<p class="image-container"><img alt="環境部署細節與 K8s Artifacts 檢視" src="img/a60ce9881f75ecca.png"></p>
 <p>Negative : 本課是手寫 ReleaseBinding,為了讓你看清楚結構,所以 <code>kubectl apply</code> 不會檢查是否符合 DeploymentPipeline 的晉升路徑。實務上建議用 <code>occ component deploy --to</code> 或 GitOps 流程,讓管線規則發揮作用(見最後一節)。</p>
 
 

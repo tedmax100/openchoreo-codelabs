@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">Online Boutique 多語言微服務架構拓撲與服務相依性全景圖</text>
+    <text class="c-sub" x="0" y="20">Google 開源示範應用 • 展示 gRPC 服務探索、Redis Resource 注入與預設封閉隔離政策</text>
+  </g>
+
+  <!-- Top Ingress Flow -->
+  <g class="f-main" transform="translate(240, 56)">
+    <!-- Browser -->
+    <rect width="130" height="42" rx="6" fill="#ffffff" stroke="#dadce0"/>
+    <text class="c-head" x="65" y="26" text-anchor="middle" font-size="12" fill="#202124">🌐 外部使用者</text>
+
+    <!-- Arrow to Gateway -->
+    <line x1="130" y1="21" x2="165" y2="21" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Gateway -->
+    <g transform="translate(165, 0)">
+      <rect width="190" height="42" rx="6" fill="#e8f0fe" stroke="#1a73e8"/>
+      <text class="c-head" x="95" y="20" text-anchor="middle" font-size="11" fill="#174ea6">Gateway (Port 19080)</text>
+      <text class="c-text" x="95" y="34" text-anchor="middle" font-size="10" fill="#5f6368">Host: development-default...</text>
+    </g>
+  </g>
+
+  <!-- Arrow down from Gateway to Frontend -->
+  <line x1="500" y1="98" x2="500" y2="120" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <text class="f-main c-code" x="510" y="112" font-size="9.5" fill="#174ea6">HTTP</text>
+
+  <!-- Frontend Component (Public) -->
+  <g class="f-main" transform="translate(360, 120)">
+    <rect width="280" height="66" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="2"/>
+    <rect x="190" y="8" width="80" height="18" rx="3" fill="#137333"/>
+    <text class="c-head" x="230" y="21" text-anchor="middle" font-size="9" fill="#ffffff">唯一對外端點</text>
+    <text class="c-head" x="15" y="26" fill="#0d652d" font-size="13">frontend (Go 語言)</text>
+    <text class="c-text" x="15" y="44" font-size="10.5" fill="#3c4043">網站門面 • 依賴多個下游 gRPC 內部服務</text>
+    <text class="c-code" x="15" y="58" font-size="9.5" fill="#137333">visibility: [external] • Port 8080</text>
+  </g>
+
+  <!-- Downward gRPC call branching bus -->
+  <path d="M 500 186 L 500 205 L 80 205 L 80 225" fill="none" stroke="#174ea6" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <path d="M 210 205 L 210 225" fill="none" stroke="#174ea6" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <path d="M 350 205 L 350 225" fill="none" stroke="#174ea6" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <path d="M 500 205 L 500 225" fill="none" stroke="#174ea6" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <path d="M 640 205 L 640 225" fill="none" stroke="#174ea6" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+  <path d="M 500 205 L 760 205 L 760 225" fill="none" stroke="#174ea6" stroke-width="1.8" marker-end="url(#arrow-blue)"/>
+
+  <text class="f-main c-code" x="420" y="200" text-anchor="middle" font-size="10" fill="#174ea6">gRPC over Cluster DNS (&lt;service&gt;.&lt;namespace&gt;.svc.cluster.local)</text>
+
+  <!-- Internal Microservices Row -->
+  <!-- 1. productcatalog -->
+  <g class="f-main" transform="translate(20, 225)">
+    <rect width="120" height="90" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="60" y="20" text-anchor="middle" font-size="11" fill="#202124">productcatalog</text>
+    <text class="c-text" x="60" y="36" text-anchor="middle" font-size="10" fill="#174ea6">Go • 3550</text>
+    <text class="c-text" x="60" y="54" text-anchor="middle" font-size="9.5" fill="#5f6368">商品目錄查詢</text>
+    <rect x="10" y="64" width="100" height="18" rx="2" fill="#e8f0fe"/>
+    <text class="c-text" x="60" y="76" text-anchor="middle" font-size="9" fill="#174ea6">首頁必備依賴</text>
+  </g>
+
+  <!-- 2. cart -->
+  <g class="f-main" transform="translate(150, 225)">
+    <rect width="120" height="90" rx="6" fill="#f8f9fa" stroke="#e37400" stroke-width="1.5"/>
+    <text class="c-head" x="60" y="20" text-anchor="middle" font-size="11" fill="#b06000">cart</text>
+    <text class="c-text" x="60" y="36" text-anchor="middle" font-size="10" fill="#174ea6">C# (.NET) • 7070</text>
+    <text class="c-text" x="60" y="54" text-anchor="middle" font-size="9.5" fill="#5f6368">購物車服務</text>
+    <rect x="10" y="64" width="100" height="18" rx="2" fill="#fef7e0"/>
+    <text class="c-text" x="60" y="76" text-anchor="middle" font-size="9" fill="#b06000">連接 Redis 儲存</text>
+  </g>
+
+  <!-- 3. checkout -->
+  <g class="f-main" transform="translate(280, 225)">
+    <rect width="140" height="90" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="70" y="20" text-anchor="middle" font-size="11" fill="#202124">checkout</text>
+    <text class="c-text" x="70" y="36" text-anchor="middle" font-size="10" fill="#174ea6">Go • 5050</text>
+    <text class="c-text" x="70" y="54" text-anchor="middle" font-size="9.5" fill="#5f6368">結帳流程協調者</text>
+    <text class="c-text" x="70" y="70" text-anchor="middle" font-size="9" fill="#5f6368">呼叫 payment/email</text>
+  </g>
+
+  <!-- 4. currency -->
+  <g class="f-main" transform="translate(430, 225)">
+    <rect width="120" height="90" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="60" y="20" text-anchor="middle" font-size="11" fill="#202124">currency</text>
+    <text class="c-text" x="60" y="36" text-anchor="middle" font-size="10" fill="#174ea6">Node.js • 7000</text>
+    <text class="c-text" x="60" y="54" text-anchor="middle" font-size="9.5" fill="#5f6368">匯率即時轉換</text>
+  </g>
+
+  <!-- 5. recommendation -->
+  <g class="f-main" transform="translate(560, 225)">
+    <rect width="120" height="90" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="60" y="20" text-anchor="middle" font-size="11" fill="#202124">recommendation</text>
+    <text class="c-text" x="60" y="36" text-anchor="middle" font-size="10" fill="#174ea6">Python • 8080</text>
+    <text class="c-text" x="60" y="54" text-anchor="middle" font-size="9.5" fill="#5f6368">商品推薦引擎</text>
+  </g>
+
+  <!-- 6. shipping & ad -->
+  <g class="f-main" transform="translate(690, 225)">
+    <rect width="130" height="90" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="65" y="20" text-anchor="middle" font-size="11" fill="#202124">shipping &amp; ad</text>
+    <text class="c-text" x="65" y="36" text-anchor="middle" font-size="10" fill="#174ea6">Go &amp; Java</text>
+    <text class="c-text" x="65" y="54" text-anchor="middle" font-size="9.5" fill="#5f6368">運費估算與廣告</text>
+  </g>
+
+  <!-- Sub-tier: Redis Resource for Cart -->
+  <g class="f-main" transform="translate(145, 330)">
+    <line x1="65" y1="-15" x2="65" y2="10" stroke="#e37400" stroke-width="1.8" marker-end="url(#arrow-orange)"/>
+    <rect width="130" height="58" rx="6" fill="#fef7e0" stroke="#f9ab00"/>
+    <text class="c-head" x="65" y="20" text-anchor="middle" font-size="10.5" fill="#b06000">📦 valkey (Resource)</text>
+    <text class="c-text" x="65" y="34" text-anchor="middle" font-size="9.5" fill="#5f6368">Redis 快取資料庫</text>
+    <text class="c-code" x="65" y="48" text-anchor="middle" font-size="9" fill="#b06000">以 Secret 注入連線密碼</text>
+  </g>
+
+  <!-- Sub-tier: Checkout calls payment/email -->
+  <g class="f-main" transform="translate(285, 330)">
+    <line x1="65" y1="-15" x2="65" y2="10" stroke="#5f6368" stroke-width="1.8" marker-end="url(#arrow-gray)"/>
+    <rect width="130" height="58" rx="6" fill="#ffffff" stroke="#dadce0"/>
+    <text class="c-head" x="65" y="20" text-anchor="middle" font-size="10.5" fill="#202124">payment &amp; email</text>
+    <text class="c-text" x="65" y="34" text-anchor="middle" font-size="9.5" fill="#5f6368">Node.js / Python</text>
+    <text class="c-text" x="65" y="48" text-anchor="middle" font-size="9" fill="#137333">結帳後續非同步處理</text>
+  </g>
+
+  <!-- Auto Injection Feature Callout -->
+  <g class="f-main" transform="translate(435, 330)">
+    <rect width="375" height="58" rx="6" fill="#e6f4ea" stroke="#137333"/>
+    <text class="c-head" x="12" y="20" font-size="11" fill="#0d652d">💡 OpenChoreo 自動注入服務位址環境變數</text>
+    <text class="c-text" x="12" y="36" font-size="10.5" fill="#3c4043">宣告依賴後，平台自動在 frontend 容器注入：</text>
+    <text class="c-code" x="12" y="50" font-size="9.5" fill="#137333">CART_SERVICE_ADDR=cart.dp-default...svc.cluster.local:7070</text>
+  </g>
+
+</svg>

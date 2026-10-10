@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 440" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="440" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">OpenChoreo Quick Start 本機環境分層堆疊心智圖</text>
+    <text class="c-sub" x="0" y="20">實體電腦、Docker、Dev Container 與 k3d Kubernetes 叢集之間的包含關係</text>
+  </g>
+
+  <!-- Outer Layer: Host PC -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="780" height="360" rx="10" fill="#f8f9fa" stroke="#bdc1c6" stroke-width="1.5"/>
+    <rect x="15" y="12" width="130" height="24" rx="4" fill="#e8eaed"/>
+    <text class="c-head" x="80" y="28" text-anchor="middle" fill="#202124">💻 你的電腦 (Host PC)</text>
+    <text class="c-text" x="160" y="28" fill="#5f6368">Linux / macOS (Colima) / Windows (WSL2) • 4GB+ RAM, 2+ CPU</text>
+
+    <!-- Layer 2: Docker Engine -->
+    <g transform="translate(20, 45)">
+      <rect width="740" height="295" rx="8" fill="#ffffff" stroke="#1a73e8" stroke-width="1.5"/>
+      <rect x="15" y="10" width="115" height="22" rx="4" fill="#e8f0fe"/>
+      <text class="c-head" x="72" y="25" text-anchor="middle" fill="#174ea6">🐳 Docker Engine</text>
+      <text class="c-text" x="140" y="25" fill="#5f6368">所有元件以容器形式隔離執行，不污染主機系統環境</text>
+
+      <!-- Container A: Dev Container -->
+      <g transform="translate(15, 42)">
+        <rect width="340" height="235" rx="6" fill="#fef7e0" fill-opacity="0.5" stroke="#f9ab00" stroke-width="1.5"/>
+        <rect x="12" y="10" width="160" height="22" rx="4" fill="#fef7e0"/>
+        <text class="c-head" x="92" y="25" text-anchor="middle" fill="#b06000">容器 A: Dev Container</text>
+        <text class="c-code" x="15" y="52" fill="#70757a">ghcr.io/openchoreo/quick-start:v1.3.1</text>
+
+        <!-- Tools inside dev container -->
+        <g transform="translate(15, 65)">
+          <rect x="0" y="0" width="310" height="26" rx="4" fill="#ffffff" stroke="#f9ab00"/>
+          <text class="c-code" x="10" y="17">k3d • k3s-in-docker 管理工具</text>
+
+          <rect x="0" y="32" width="310" height="26" rx="4" fill="#ffffff" stroke="#f9ab00"/>
+          <text class="c-code" x="10" y="49">Helm 3 • Kubernetes 套件安裝引擎</text>
+
+          <rect x="0" y="64" width="310" height="26" rx="4" fill="#ffffff" stroke="#f9ab00"/>
+          <text class="c-code" x="10" y="81">kubectl &amp; occ CLI • 叢集操作指令集</text>
+
+          <rect x="0" y="96" width="310" height="26" rx="4" fill="#ffffff" stroke="#f9ab00"/>
+          <text class="c-code" x="10" y="113">./install.sh • 自動化端到端安裝腳本</text>
+        </g>
+
+        <!-- Docker socket mount indicator -->
+        <rect x="15" y="196" width="310" height="28" rx="4" fill="#ffffff" stroke="#e37400" stroke-dasharray="3,3"/>
+        <text class="c-text" x="170" y="214" text-anchor="middle" fill="#b06000" font-weight="600">掛載 /var/run/docker.sock 控制主機 Docker</text>
+      </g>
+
+      <!-- Connecting Arrow -->
+      <g transform="translate(355, 155)">
+        <line x1="5" y1="0" x2="25" y2="0" stroke="#1a73e8" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
+        <text class="c-text" x="15" y="-8" text-anchor="middle" fill="#174ea6" font-size="10">k3d 建立</text>
+      </g>
+
+      <!-- Container B: k3d Cluster -->
+      <g transform="translate(385, 42)">
+        <rect width="340" height="235" rx="6" fill="#e8f0fe" fill-opacity="0.4" stroke="#1a73e8" stroke-width="1.5"/>
+        <rect x="12" y="10" width="165" height="22" rx="4" fill="#e8f0fe"/>
+        <text class="c-head" x="94" y="25" text-anchor="middle" fill="#174ea6">容器 B: k3d (Kubernetes)</text>
+        <text class="c-text" x="15" y="52" fill="#5f6368">輕量單節點叢集，內建 OpenChoreo 生態</text>
+
+        <!-- Components installed inside cluster -->
+        <g transform="translate(15, 65)">
+          <rect x="0" y="0" width="310" height="34" rx="4" fill="#ffffff" stroke="#dadce0"/>
+          <text class="c-head" x="10" y="18" fill="#174ea6" font-size="12">OpenChoreo 控制平面</text>
+          <text class="c-text" x="10" y="29" font-size="10" fill="#5f6368">Controller Manager &amp; CRD 協調器群</text>
+
+          <rect x="0" y="40" width="310" height="34" rx="4" fill="#ffffff" stroke="#dadce0"/>
+          <text class="c-head" x="10" y="58" fill="#137333" font-size="12">Backstage 開發者入口</text>
+          <text class="c-text" x="10" y="69" font-size="10" fill="#5f6368">Web UI 介面 (http://localhost:3000)</text>
+
+          <rect x="0" y="80" width="310" height="34" rx="4" fill="#ffffff" stroke="#dadce0"/>
+          <text class="c-head" x="10" y="98" fill="#7b1fa2" font-size="12">基礎設施相依元件 (Helm)</text>
+          <text class="c-text" x="10" y="109" font-size="10" fill="#5f6368">cert-manager • HashiCorp Vault • Dex 身分服務</text>
+
+          <rect x="0" y="120" width="310" height="34" rx="4" fill="#ffffff" stroke="#dadce0"/>
+          <text class="c-head" x="10" y="138" fill="#e37400" font-size="12">範例應用程式</text>
+          <text class="c-text" x="10" y="149" font-size="10" fill="#5f6368">react-starter (驗證端到端部署流程)</text>
+        </g>
+
+        <!-- Ready indicator -->
+        <rect x="15" y="196" width="310" height="28" rx="4" fill="#e6f4ea" stroke="#137333"/>
+        <text class="c-text" x="170" y="214" text-anchor="middle" fill="#137333" font-weight="600">完成後即可透過瀏覽器或 kubectl 存取</text>
+      </g>
+    </g>
+  </g>
+
+</svg>

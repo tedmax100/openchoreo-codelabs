@@ -83,6 +83,8 @@ Duration: 8
 
 重點不是「隱藏 Kubernetes」,而是**提供一條鋪好的路**:這條路有個名字叫 **Golden Path(黃金路徑)**,走這條路最簡單,同時自動符合安全與合規要求。
 
+![Kubernetes 認知負荷 vs 平台工程黃金路徑](img/01-idp-concept.svg)
+
 ### OpenChoreo 在其中的位置
 
 * 它是 **CNCF Sandbox** 專案(雲原生運算基金會的早期專案層級),開源
@@ -97,13 +99,8 @@ Positive
 
 跑 Quick Start 時,背後有好幾層東西疊在一起。先建立心智圖,看到指令時就不會迷路:
 
-```
-你的電腦
-└── Docker
-    ├── 容器 A:Dev Container(裡面有安裝腳本與工具)
-    └── 容器 B:k3d 建立的 Kubernetes 叢集(其實也是 Docker 容器)
-        └── 叢集裡面:OpenChoreo 與它的相依元件(用 Helm 安裝)
-```
+![Quick Start 本機分層堆疊心智圖](img/01-local-architecture.svg)
+
 
 | 名詞 | 白話解釋 |
 |---|---|
@@ -201,6 +198,8 @@ http://react-starter-development-default.openchoreoapis.localhost:19080
 
 你會看到一個 React 範例網站。
 
+![React Starter 實機執行畫面](img/01-react-starter-live.png)
+
 Positive
 : 在 Dev Container 模式下,閘道(Gateway)對主機開放 **19080(HTTP)** 與 **19443(HTTPS)**。注意這個 port 與入口網站的 8080 不同。
 
@@ -221,6 +220,14 @@ http://openchoreo.localhost:8080/
 |---|---|
 | Username | `admin@openchoreo.dev` |
 | Password | `Admin@123` |
+
+登入時會跳轉至 ThunderID 身分認證伺服器：
+
+![ThunderID 登入認證](img/01-thunderid-login.png)
+
+登入後進入 OpenChoreo 門戶控制台主頁，可看到底層 Data / Workflow / Observability 平面連線狀態：
+
+![OpenChoreo 控制台主頁](img/01-openchoreo-home.png)
 
 登入後試著探索:
 

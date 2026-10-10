@@ -122,10 +122,13 @@ MCP 只是控制平面 API 的另一個入口,**沿用同一套 RBAC、稽核與
 ## 兩個 MCP 伺服器
 Duration: 4
 
+![AI 代理人、MCP 協定與 OpenChoreo 整合全景圖](img/10-ai-mcp-architecture.svg)
+
 | 伺服器 | 本機位址 | 職責 |
 |---|---|---|
 | **Control Plane MCP** | `http://api.openchoreo.localhost:8080/mcp` | 管理資源、部署、建置、平台設定 |
 | **Observability MCP** | `http://observer.openchoreo.localhost:11080/mcp` | 日誌、指標、追蹤、告警、成本、DORA |
+
 
 ### Control Plane 的工具分類
 
@@ -281,10 +284,17 @@ kubectl get project -n default
 Positive
 : 專案是用 `kubectl` 就能看到的真實 Kubernetes 資源。MCP 並沒有另一套資料庫,它只是控制平面 API 的另一個入口,所以 GitOps、稽核日誌、RBAC 全部照常運作。
 
+在入口網站的 Audit Logs 頁面中，亦能即時看到這兩筆由 MCP 調用所留下的審計日誌（Actor 為 `service_mcp_client`、Surface 為 `mcp`）：
+
+![MCP 調用所留下之 Audit Logs 稽核紀錄](img/10-mcp-audit-logs.png)
+
 ## 權限與安全
 Duration: 5
 
+![MCP 工具呼叫循環與安全防護邊界](img/10-mcp-tool-security.svg)
+
 AI 助理有能力刪除專案,這是好事也是風險。OpenChoreo 的做法:
+
 
 ### 1. 同一套 RBAC
 

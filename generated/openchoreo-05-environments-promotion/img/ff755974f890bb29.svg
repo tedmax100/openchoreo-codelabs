@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 455" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="455" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">Release 與 ReleaseBinding「書籍與書店」指標模型</text>
+    <text class="c-sub" x="0" y="20">晉升 (Promotion) 不是重新打包建置，只是切換指標；回滾 (Rollback) 僅需指回前一版本</text>
+  </g>
+
+  <!-- Left: Immutable Releases (Books) -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="320" height="330" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+    <text class="c-head" x="20" y="26" fill="#174ea6">不可變制品庫 (ComponentReleases)</text>
+    <text class="c-text" x="20" y="44" font-size="11" fill="#5f6368">比喻：出版印刷好的書本版次，內容永遠凍結</text>
+
+    <!-- Release 1 -->
+    <g transform="translate(15, 60)">
+      <rect width="290" height="115" rx="6" fill="#ffffff" stroke="#1a73e8"/>
+      <text class="c-head" x="12" y="24" fill="#174ea6" font-size="13">📦 Release v1 (greeter-65f6b7d6b6)</text>
+      <text class="c-code" x="12" y="46" font-size="11">image: greeter:v1.0.0</text>
+      <text class="c-code" x="12" y="64" font-size="11">text: "Hello from OpenChoreo"</text>
+      <text class="c-text" x="12" y="84" font-size="10.5" fill="#5f6368">雜湊碼：65f6b7d6b6 (內容唯一決定)</text>
+      <rect x="12" y="92" width="130" height="16" rx="3" fill="#e6f4ea"/>
+      <text class="c-text" x="77" y="104" text-anchor="middle" font-size="9.5" fill="#137333">✓ 完整封裝不可改動</text>
+    </g>
+
+    <!-- Release 2 -->
+    <g transform="translate(15, 190)">
+      <rect width="290" height="115" rx="6" fill="#ffffff" stroke="#1a73e8"/>
+      <text class="c-head" x="12" y="24" fill="#174ea6" font-size="13">📦 Release v2 (greeter-89e4c3a1f0)</text>
+      <text class="c-code" x="12" y="46" font-size="11">image: greeter:v2.0.0 (新版)</text>
+      <text class="c-code" x="12" y="64" font-size="11">text: "Hello from OpenChoreo v2!"</text>
+      <text class="c-text" x="12" y="84" font-size="10.5" fill="#5f6368">雜湊碼：89e4c3a1f0 (全新快照)</text>
+      <rect x="12" y="92" width="130" height="16" rx="3" fill="#e8f0fe"/>
+      <text class="c-text" x="77" y="104" text-anchor="middle" font-size="9.5" fill="#174ea6">✓ 完整封裝不可改動</text>
+    </g>
+  </g>
+
+  <!-- Right: ReleaseBindings per Environment (Bookstores) -->
+  <g class="f-main" transform="translate(420, 60)">
+    <rect width="390" height="330" rx="8" fill="#f8f9fa" stroke="#dadce0" stroke-width="1.5"/>
+    <text class="c-head" x="20" y="26" fill="#202124">各環境綁定 (ReleaseBindings)</text>
+    <text class="c-text" x="20" y="44" font-size="11" fill="#5f6368">比喻：各分店上架清單，只記錄「本店目前賣第幾版」與分店設定</text>
+
+    <!-- Dev Binding -->
+    <g transform="translate(15, 60)">
+      <rect width="360" height="74" rx="6" fill="#ffffff" stroke="#137333" stroke-width="1.5"/>
+      <text class="c-head" x="12" y="22" fill="#137333" font-size="12">🏪 development 書店 (dev-binding)</text>
+      <text class="c-text" x="12" y="40" font-size="11" fill="#3c4043">指標指向：<tspan class="f-code" fill="#174ea6" font-weight="700">Release v2</tspan> (autoDeploy 自動前進)</text>
+      <text class="c-text" x="12" y="58" font-size="10.5" fill="#5f6368">環境覆寫：replicas: 1 • LOG_LEVEL=DEBUG</text>
+    </g>
+
+    <!-- Staging Binding -->
+    <g transform="translate(15, 145)">
+      <rect width="360" height="74" rx="6" fill="#ffffff" stroke="#e37400" stroke-width="1.5"/>
+      <text class="c-head" x="12" y="22" fill="#e37400" font-size="12">🏪 staging 書店 (staging-binding)</text>
+      <text class="c-text" x="12" y="40" font-size="11" fill="#3c4043">指標指向：<tspan class="f-code" fill="#174ea6" font-weight="700">Release v1</tspan> (等待 dev 驗證完畢)</text>
+      <text class="c-text" x="12" y="58" font-size="10.5" fill="#5f6368">環境覆寫：replicas: 2 • LOG_LEVEL=INFO</text>
+    </g>
+
+    <!-- Prod Binding -->
+    <g transform="translate(15, 230)">
+      <rect width="360" height="74" rx="6" fill="#ffffff" stroke="#7b1fa2" stroke-width="1.5"/>
+      <text class="c-head" x="12" y="22" fill="#7b1fa2" font-size="12">🏪 production 書店 (prod-binding)</text>
+      <text class="c-text" x="12" y="40" font-size="11" fill="#3c4043">指標指向：<tspan class="f-code" fill="#174ea6" font-weight="700">Release v1</tspan> (當前線上穩定版)</text>
+      <text class="c-text" x="12" y="58" font-size="10.5" fill="#5f6368">環境覆寫：replicas: 5 • isProduction: true</text>
+    </g>
+  </g>
+
+  <!-- Dynamic Connecting Arrows between Releases and Bindings -->
+  <!-- Release 2 -> Dev binding -->
+  <path d="M 320 250 L 375 250 L 375 97 L 420 97" fill="none" stroke="#137333" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+
+  <!-- Release 1 -> Staging binding -->
+  <path d="M 320 120 L 395 120 L 395 182 L 420 182" fill="none" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+  <!-- Release 1 -> Prod binding -->
+  <path d="M 320 120 L 395 120 L 395 267 L 420 267" fill="none" stroke="#7b1fa2" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+  <!-- Summary footer -->
+  <rect x="30" y="405" width="780" height="34" rx="6" fill="#e6f4ea"/>
+  <text class="f-main c-text" x="420" y="426" text-anchor="middle" font-weight="600" fill="#137333">
+    晉升操作：只需修改 ReleaseBinding 的 releaseName 指標，即刻秒級生效；若發生問題，指回舊雜湊秒級無痛回滾！
+  </text>
+
+</svg>

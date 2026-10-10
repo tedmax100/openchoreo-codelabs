@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">Kubernetes 宣告式模型與調和迴圈 (Reconciliation Loop)</text>
+    <text class="c-sub" x="0" y="20">OpenChoreo Operator 持續對齊「開發者期望狀態」與「叢集實際狀態」</text>
+  </g>
+
+  <!-- Left: Desired State -->
+  <g class="f-main" transform="translate(30, 65)">
+    <rect width="230" height="280" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+    <text class="c-head" x="115" y="30" text-anchor="middle" fill="#174ea6">1. 期望狀態 (Desired)</text>
+    <text class="c-text" x="115" y="48" text-anchor="middle" fill="#5f6368">開發者宣告需求</text>
+
+    <rect x="15" y="65" width="200" height="150" rx="4" fill="#ffffff" stroke="#dadce0"/>
+    <text class="c-code" x="25" y="85" font-weight="700" fill="#174ea6">kind: Component</text>
+    <text class="c-code" x="25" y="105" fill="#5f6368">spec:</text>
+    <text class="c-code" x="35" y="125" fill="#137333">  replicas: 3</text>
+    <text class="c-code" x="35" y="145" fill="#5f6368">  image: myapp:v1</text>
+    <text class="c-code" x="35" y="165" fill="#e37400">  port: 8080</text>
+    <text class="c-code" x="35" y="185" fill="#7b1fa2">  visibility: external</text>
+
+    <rect x="15" y="225" width="200" height="42" rx="4" fill="#ffffff" stroke="#1a73e8"/>
+    <text class="c-text" x="115" y="243" text-anchor="middle" fill="#174ea6">透過 GitOps 或 occ 提交</text>
+    <text class="c-text" x="115" y="258" text-anchor="middle" font-size="11" fill="#5f6368">寫入 Kubernetes API (etcd)</text>
+  </g>
+
+  <!-- Center: Controller Reconcile Loop -->
+  <g class="f-main" transform="translate(290, 65)">
+    <rect width="260" height="280" rx="8" fill="#f8f9fa" stroke="#5f6368" stroke-width="1.5"/>
+    <text class="c-head" x="130" y="30" text-anchor="middle" fill="#202124">2. OpenChoreo 控制器</text>
+    <text class="c-text" x="130" y="48" text-anchor="middle" fill="#5f6368">controller-manager 核心迴圈</text>
+
+    <!-- Loop Steps -->
+    <g transform="translate(20, 65)">
+      <!-- Step 1: Observe -->
+      <rect x="0" y="0" width="220" height="48" rx="6" fill="#e8f0fe" stroke="#1a73e8"/>
+      <circle cx="20" cy="24" r="12" fill="#1a73e8"/>
+      <text class="badge" x="20" y="28" fill="#ffffff">1</text>
+      <text class="c-head" x="42" y="20" fill="#174ea6" font-size="12">觀察 (Observe)</text>
+      <text class="c-text" x="42" y="36" font-size="11" fill="#5f6368">查詢實際 Pods 只有 2 個在跑</text>
+
+      <line x1="110" y1="48" x2="110" y2="60" stroke="#5f6368" stroke-width="2" marker-end="url(#arrow-gray)"/>
+
+      <!-- Step 2: Diff -->
+      <rect x="0" y="60" width="220" height="48" rx="6" fill="#fef7e0" stroke="#e37400"/>
+      <circle cx="20" cy="84" r="12" fill="#e37400"/>
+      <text class="badge" x="20" y="88" fill="#ffffff">2</text>
+      <text class="c-head" x="42" y="80" fill="#b06000" font-size="12">比對差異 (Diff)</text>
+      <text class="c-text" x="42" y="96" font-size="11" fill="#5f6368">期望 3 個 ≠ 實際 2 個 (少 1)</text>
+
+      <line x1="110" y1="108" x2="110" y2="120" stroke="#5f6368" stroke-width="2" marker-end="url(#arrow-gray)"/>
+
+      <!-- Step 3: Act -->
+      <rect x="0" y="120" width="220" height="48" rx="6" fill="#e6f4ea" stroke="#137333"/>
+      <circle cx="20" cy="144" r="12" fill="#137333"/>
+      <text class="badge" x="20" y="148" fill="#ffffff">3</text>
+      <text class="c-head" x="42" y="140" fill="#0d652d" font-size="12">採取行動 (Act)</text>
+      <text class="c-text" x="42" y="156" font-size="11" fill="#5f6368">呼叫 K8s API 自動補啟動 1 個 Pod</text>
+
+      <!-- Status write back -->
+      <rect x="0" y="180" width="220" height="26" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-code" x="10" y="197">寫回 status.conditions</text>
+    </g>
+  </g>
+
+  <!-- Right: Actual State -->
+  <g class="f-main" transform="translate(580, 65)">
+    <rect width="230" height="280" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+    <text class="c-head" x="115" y="30" text-anchor="middle" fill="#0d652d">3. 實際狀態 (Actual)</text>
+    <text class="c-text" x="115" y="48" text-anchor="middle" fill="#5f6368">Data Plane 真實資源</text>
+
+    <g transform="translate(15, 65)">
+      <!-- Pods -->
+      <rect x="0" y="0" width="200" height="34" rx="4" fill="#ffffff" stroke="#137333"/>
+      <circle cx="18" cy="17" r="6" fill="#137333"/>
+      <text class="c-head" x="32" y="21" font-size="12" fill="#137333">Pod #1 (Running)</text>
+
+      <rect x="0" y="42" width="200" height="34" rx="4" fill="#ffffff" stroke="#137333"/>
+      <circle cx="18" cy="59" r="6" fill="#137333"/>
+      <text class="c-head" x="32" y="63" font-size="12" fill="#137333">Pod #2 (Running)</text>
+
+      <rect x="0" y="84" width="200" height="34" rx="4" fill="#ffffff" stroke="#137333"/>
+      <circle cx="18" cy="101" r="6" fill="#137333"/>
+      <text class="c-head" x="32" y="105" font-size="12" fill="#137333">Pod #3 (新增完成)</text>
+
+      <rect x="0" y="128" width="200" height="66" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="10" y="148" font-size="11" fill="#3c4043">配套產生的網路資源：</text>
+      <text class="c-text" x="10" y="165" font-size="10.5" fill="#5f6368">• ClusterIP Service</text>
+      <text class="c-text" x="10" y="182" font-size="10.5" fill="#5f6368">• Gateway HTTPRoute</text>
+    </g>
+
+    <!-- Self-healing note -->
+    <rect x="15" y="240" width="200" height="28" rx="4" fill="#ffffff" stroke="#137333" stroke-dasharray="3,3"/>
+    <text class="c-text" x="100" y="258" text-anchor="middle" font-weight="600" fill="#137333">⚡ 自我修復 (Self-Healing)</text>
+  </g>
+
+  <!-- Connectors between blocks -->
+  <line x1="260" y1="200" x2="290" y2="200" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="550" y1="200" x2="580" y2="200" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+  <!-- Footer explanation -->
+  <rect x="30" y="360" width="780" height="42" rx="6" fill="#f1f3f4"/>
+  <text class="f-main c-text" x="420" y="386" text-anchor="middle" font-weight="600" fill="#3c4043">
+    核心結論：開發者只需專注「宣告期望狀態」，OpenChoreo 控制器保證「叢集狀態永遠調和一致」。
+  </text>
+
+</svg>

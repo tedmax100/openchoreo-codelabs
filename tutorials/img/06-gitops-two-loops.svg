@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">GitOps 兩層調和迴圈與 Self-Healing (自我還原) 機制</text>
+    <text class="c-sub" x="0" y="20">Argo CD 負責「Git 到 OpenChoreo CRD」，OpenChoreo 負責「CRD 到底層 Kubernetes 資源」</text>
+  </g>
+
+  <!-- Left: Git Repository -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="220" height="260" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+    <text class="c-head" x="110" y="26" text-anchor="middle" fill="#174ea6">唯一真實來源</text>
+    <text class="c-head" x="110" y="44" text-anchor="middle" fill="#1a73e8" font-size="12">(Single Source of Truth)</text>
+
+    <!-- Git repo icon and content -->
+    <g transform="translate(15, 60)">
+      <rect width="190" height="140" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="12" y="22" font-size="12" fill="#202124">📁 Git Repository</text>
+      <text class="c-code" x="12" y="42" font-size="10.5">apps/hello-gitops/</text>
+      <text class="c-code" x="22" y="60" font-size="10" fill="#174ea6">├── component.yaml</text>
+      <text class="c-code" x="22" y="78" font-size="10" fill="#174ea6">└── workload.yaml</text>
+      <text class="c-text" x="12" y="105" font-size="10" fill="#5f6368">• 具備版本歷史</text>
+      <text class="c-text" x="12" y="122" font-size="10" fill="#5f6368">• Commit ID 審計軌跡</text>
+    </g>
+
+    <rect x="15" y="212" width="190" height="34" rx="4" fill="#e8f0fe"/>
+    <text class="c-text" x="110" y="233" text-anchor="middle" font-size="10.5" fill="#174ea6">團隊透過 PR / Commit 修改</text>
+  </g>
+
+  <!-- Loop 1: Argo CD -->
+  <g class="f-main" transform="translate(265, 80)">
+    <rect width="125" height="180" rx="6" fill="#fef7e0" stroke="#e37400" stroke-width="1.5"/>
+    <text class="c-head" x="62" y="22" text-anchor="middle" fill="#b06000" font-size="12">調和迴圈 1</text>
+    <text class="c-head" x="62" y="38" text-anchor="middle" fill="#b06000" font-size="11">Argo CD</text>
+
+    <text class="c-text" x="62" y="66" text-anchor="middle" font-size="10" fill="#5f6368">持續拉取 Git</text>
+    <line x1="15" y1="78" x2="110" y2="78" stroke="#dadce0"/>
+    <text class="c-text" x="62" y="98" text-anchor="middle" font-size="10" fill="#5f6368">比對叢集狀態</text>
+    <line x1="15" y1="110" x2="110" y2="110" stroke="#dadce0"/>
+    <rect x="10" y="122" width="105" height="46" rx="4" fill="#ffffff" stroke="#e37400"/>
+    <text class="c-head" x="62" y="140" text-anchor="middle" font-size="10" fill="#b06000">⚡ selfHeal</text>
+    <text class="c-text" x="62" y="156" text-anchor="middle" font-size="9" fill="#d93025">手動修改自動還原</text>
+  </g>
+
+  <!-- Connectors -->
+  <line x1="250" y1="170" x2="265" y2="170" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="390" y1="170" x2="405" y2="170" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+  <!-- Middle: OpenChoreo CRDs -->
+  <g class="f-main" transform="translate(405, 60)">
+    <rect width="180" height="260" rx="8" fill="#ffffff" stroke="#dadce0" stroke-width="1.5"/>
+    <text class="c-head" x="90" y="26" text-anchor="middle" fill="#202124">叢集宣告狀態</text>
+    <text class="c-text" x="90" y="44" text-anchor="middle" font-size="11" fill="#5f6368">OpenChoreo CRDs</text>
+
+    <g transform="translate(15, 60)">
+      <rect width="150" height="60" rx="4" fill="#e8f0fe" stroke="#1a73e8"/>
+      <text class="c-head" x="10" y="22" font-size="11" fill="#174ea6">Component CR</text>
+      <text class="c-code" x="10" y="40" font-size="9.5">hello-gitops</text>
+
+      <rect y="75" width="150" height="60" rx="4" fill="#e8f0fe" stroke="#1a73e8"/>
+      <text class="c-head" x="10" y="22" font-size="11" fill="#174ea6">Workload CR</text>
+      <text class="c-code" x="10" y="40" font-size="9.5">containers &amp; ports</text>
+    </g>
+
+    <rect x="15" y="212" width="150" height="34" rx="4" fill="#f8f9fa"/>
+    <text class="c-text" x="75" y="233" text-anchor="middle" font-size="10.5" fill="#5f6368">Synced &amp; Healthy</text>
+  </g>
+
+  <!-- Loop 2: OpenChoreo Controller -->
+  <g class="f-main" transform="translate(600, 80)">
+    <rect width="125" height="180" rx="6" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+    <text class="c-head" x="62" y="22" text-anchor="middle" fill="#0d652d" font-size="12">調和迴圈 2</text>
+    <text class="c-head" x="62" y="38" text-anchor="middle" fill="#0d652d" font-size="11">OpenChoreo 控制器</text>
+
+    <text class="c-text" x="62" y="66" text-anchor="middle" font-size="10" fill="#5f6368">監聽 CRD 變更</text>
+    <line x1="15" y1="78" x2="110" y2="78" stroke="#dadce0"/>
+    <text class="c-text" x="62" y="98" text-anchor="middle" font-size="10" fill="#5f6368">代入模板合成</text>
+    <line x1="15" y1="110" x2="110" y2="110" stroke="#dadce0"/>
+    <rect x="10" y="122" width="105" height="46" rx="4" fill="#ffffff" stroke="#137333"/>
+    <text class="c-head" x="62" y="140" text-anchor="middle" font-size="10" fill="#137333">📦 生成資源</text>
+    <text class="c-text" x="62" y="156" text-anchor="middle" font-size="9" fill="#137333">發布至 Data Plane</text>
+  </g>
+
+  <!-- Connectors -->
+  <line x1="585" y1="170" x2="600" y2="170" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="725" y1="170" x2="745" y2="170" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+  <!-- Right: Data Plane Resources -->
+  <g class="f-main" transform="translate(745, 60)">
+    <rect width="65" height="260" rx="6" fill="#e6f4ea" stroke="#137333"/>
+    <text class="c-head" x="32" y="50" text-anchor="middle" font-size="11" fill="#0d652d" transform="rotate(90, 32, 50)">Data Plane</text>
+    <text class="c-code" x="32" y="160" text-anchor="middle" font-size="10" fill="#137333" transform="rotate(90, 32, 160)">Pod/Service</text>
+  </g>
+
+  <!-- Self-heal demonstration box -->
+  <g class="f-main" transform="translate(30, 335)">
+    <rect width="780" height="70" rx="6" fill="#fef7e0" stroke="#f9ab00"/>
+    <text class="c-head" x="15" y="22" fill="#b06000" font-size="12">🛡️ 實驗驗證：設定漂移 (Configuration Drift) 與 Self-Healing</text>
+    <text class="c-text" x="15" y="42" fill="#3c4043" font-size="11">
+      當工程師偷偷在叢集內執行 <tspan class="f-code" fill="#b06000">kubectl edit</tspan> 將環境變數改為惡意值，Argo CD 在 3 秒內偵測到狀態 OutOfSync，
+    </text>
+    <text class="c-text" x="15" y="58" fill="#137333" font-weight="600" font-size="11">
+      立即使動 selfHeal 強制將叢集還原為 Git 定義的內容！有效杜絕線上偷改造成的維運黑洞。
+    </text>
+  </g>
+
+</svg>

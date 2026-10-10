@@ -67,6 +67,16 @@ Pod 的 IP 會隨時變動,所以不能寫死 IP。Kubernetes 用 **Service** �
 
 你在第 9 課會看到 frontend 收到的環境變數,就是這種格式(例如 `cart.dp-default-...svc.cluster.local:7070`)。**OpenChoreo 幫你算出這個位址並注入環境變數**,你只需宣告「我依賴 cart 的 grpc 端點」。
 
+### Data Plane 東西向流量治理與 NetworkPolicy 零信任
+
+在傳統 Kubernetes 叢集中,所有 Pod 預設處於同一個平面網路(Flat Network),彼此可以任意連通,一旦某個邊緣 Pod 被入侵,整個叢集就暴露在橫向滲透的風險中。
+
+OpenChoreo 在 **Data Plane** 實踐了嚴格的「零信任(Zero Trust)」治理原則:
+
+* **南北向流量(外部進出)**: 只有宣告 `visibility: [external]` 的端點,平台才會在 Envoy 閘道配置 `HTTPRoute`,對外開放存取(如本課的 `frontend`)。
+* **東西向流量(內部呼叫)**: 其餘內部微服務端點僅在 Project 內可見,平台會根據 `Component.spec.dependencies` 自動計算內部 CoreDNS 位址(`<service>.<namespace>.svc.cluster.local:<port>`),並注入給呼叫端的環境變數。
+* **自動 NetworkPolicy 微隔離**: 平台預設套用 Default Deny 政策。只有在宣告依賴時,控制器才會自動在 Data Plane 生成允許通訊的 `NetworkPolicy` 規則。如果 `frontend` 試圖直連未宣告的內部服務,封包會在核心層被直接丟棄。
+
 ### 有狀態與無狀態
 
 | | 無狀態(Stateless) | 有狀態(Stateful) |
@@ -103,18 +113,8 @@ Google SRE 書中提出的**四個黃金訊號**,是判斷服務健康的好起�
 ## 架構
 Duration: 4
 
-```
-                        ┌──────────┐
- 瀏覽器 ──(外部)──────▶ │ frontend │
-                        └────┬─────┘
-        ┌───────┬────────┬───┴────┬─────────┬──────────┬───────────┐
-        ▼       ▼        ▼        ▼         ▼          ▼           ▼
-       ad     cart   checkout  currency  recommendation shipping productcatalog
-                │        │
-                ▼        ├──▶ payment
-             [redis]     ├──▶ email
-                         └──▶ shipping / currency / productcatalog / cart
-```
+![Online Boutique 微服務拓撲與服務相依性全景圖](img/09-microservices-topology.svg)
+
 
 | 服務 | 語言 | 角色 |
 |---|---|---|
@@ -332,7 +332,10 @@ Negative
 ## 排錯演練
 Duration: 8
 
+![微服務連鎖故障排錯演練流程](img/09-troubleshooting-flow.svg)
+
 練習「從症狀倒推原因」。我們讓 `productcatalog` 下線:
+
 
 ```bash
 kubectl patch releasebinding productcatalog-development -n default --type merge \

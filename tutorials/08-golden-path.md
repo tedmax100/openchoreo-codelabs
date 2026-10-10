@@ -59,6 +59,8 @@ OpenChoreo 的做法是提供模板(ComponentType)讓大部分情況一鍵搞定
 | 不能對外暴露 | `validations` 規則 |
 | 只能用核准的附加能力 | `allowedTraits` |
 
+![平台護欄與 CEL 策略驗證機制](img/08-guardrails-cel.svg)
+
 這種「把規則寫成機器可檢查的程式碼」的做法,通稱 **策略即程式碼(policy as code)**。
 
 ### 三個技術基礎
@@ -100,7 +102,13 @@ ComponentType 是一個「資源模板」:把輸入(參數、Workload)代進去,
 | 平台工程師 | ComponentType、Trait、Workflow、Environment | 安全、合規、一致性、成本 |
 | 開發者 | Component、Workload | 功能、速度 |
 
+![平台工程黃金路徑：組合式架構](img/08-golden-path-composition.svg)
+
 這個分工的美妙之處:平台工程師寫一次規則,所有開發者自動受益;開發者專心在業務,不必記規範。
+
+在入口網站的 Create 頁面中，開發者便可透過自服務門戶直接選用平台工程師定義的各類標準範本：
+
+![自服務資源範本中心](img/08-create-templates.png)
 
 接下來你要扮演平台工程師。
 

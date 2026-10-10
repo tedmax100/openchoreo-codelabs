@@ -76,6 +76,8 @@ Duration: 8
 
 本課你會看到的四個步驟(checkout、build、publish、generate-workload),就是 Argo 的四個步驟,每一步一個 Pod。
 
+![Workflow Plane 4 步驟原始碼建置管線](img/04-workflow-pipeline.svg)
+
 ### 模板與執行:Workflow 與 WorkflowRun
 
 如果熟悉程式設計,可以這樣理解:
@@ -100,24 +102,61 @@ Duration: 8
 
 最重要的原則:**同一個映像**應該一路從 development 走到 production,而不是每個環境重建一次。因為重建可能得到不同的結果。這個原則是第 5 課的基礎。
 
+![「建置一次，到處部署」原則](img/04-build-once-deploy.svg)
+
+
 準備好了就開始安裝 Workflow Plane。
 
 ## 認識 Workflow Plane
-Duration: 4
+Duration: 6
 
 Workflow Plane 是 OpenChoreo 專門跑「流程」的地方,負責 CI 建置、測試與平台定義的任務。它底層使用 **Argo Workflows**,並搭配一個本機用的 **container registry**。
 
-| 元件 | 角色 |
-|---|---|
-| **ClusterWorkflow**(控制平面) | 開發者看到的「流程模板」,定義參數 schema 與要產生的 Argo Workflow |
-| **WorkflowRun**(控制平面) | 一次實際執行,帶入參數 |
-| **Argo Workflow**(Workflow Plane) | 真正跑建置的 Pod |
-| **ClusterWorkflowTemplate**(Workflow Plane) | 各步驟的可重用模板 |
-| **Registry** | 存放建好的映像 |
+### 1. 核心 CRD 與五層調和模型
 
-### 內建的 ClusterWorkflow
+在架構上,Workflow Plane 貫穿了從基礎設施註冊到不可變製品產出的五個抽象層次:
 
-你的叢集在安裝時就已經有這些建置器,查看它們:
+| 層次 | 核心 CRD / 組件 | 所在平面 | 職責與運作內容 |
+|---|---|---|---|
+| **1. 基礎設施層** | **`ClusterWorkflowPlane`** | Control Plane | 向控制平面宣告工作流叢集、建立 `cluster-agent` mTLS 安全連線與綁定 SecretStore。 |
+| **2. 流程模板層** | **`ClusterWorkflow`** | Control Plane | 平台工程師定義的 CI 食譜,宣告參數 schema(Git URL、分支、Dockerfile 路徑)與轉譯邏輯。 |
+| **3. 實例執行層** | **`WorkflowRun`** | Control Plane | 開發者發起的一次建置執行,綁定特定 Component 與 Project 標籤,帶入實際參數。 |
+| **4. 任務執行層** | **`Argo Workflow`** + **`ClusterWorkflowTemplate`** | Workflow Plane | 底層工作流引擎將任務解構為 4 個獨立的 Kubernetes Pod 依序執行(每步一個 Pod)。 |
+| **5. 製品倉庫層** | **`Container Registry`** | Workflow Plane | 儲存建置完成的容器映像,並由控制器封裝為不可變的 `ComponentRelease`。 |
+
+#### 註冊中樞:ClusterWorkflowPlane
+
+工作流平面透過 `ClusterWorkflowPlane` 向控制平面報到:
+
+```yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterWorkflowPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  clusterAgent:
+    clientCA:
+      value: "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+  secretStoreRef:
+    name: default
+```
+
+當工作流平面就緒後,在 OpenChoreo 控制台首頁可以直觀看到 **Cluster Workflow Planes** 點亮為綠色的 Connected 狀態:
+
+![OpenChoreo 控制台首頁顯示 Cluster Workflow Planes 連線就緒](img/04-workflow-plane-connected.png)
+
+### 2. 為什麼建置必須獨立在 Workflow Plane?
+
+在企業生產環境中,絕不能將 CI 建置與 Data Plane(正式線上服務)混在同一個節點,理由包含三大防禦維度:
+
+* **安全隔離(防禦 Untrusted Code)**: 建置過程會執行外部開發者寫的 Dockerfile 指令(`RUN npm install`、`RUN curl | bash`),具有潛在安全威脅。獨立在 Workflow Plane 可避免惡意指令橫向攻擊線上正式資料庫或業務 Pod。
+* **資源隔離(防爆量 CPU/IO)**: 編譯程式碼(如 Go 編譯、Maven 打包、Docker 層建立)會瞬間將 CPU、記憶體與磁碟 I/O 衝到 100%。獨立平面能徹底避免線上交易服務產生延遲甚至引發 OOM 當機。
+* **彈性算力成本優化**: Workflow Plane 節點可配置為雲端 Spot Instances(競價搶佔式實例),有建置任務才開機,建置完即銷毀,大幅降低企業 CI 成本。
+
+### 3. 內建的 ClusterWorkflow 建置器
+
+你的叢集在安裝時就已經預載了多種建置器,查看它們:
 
 ```bash
 kubectl get clusterworkflow
@@ -272,6 +311,20 @@ spec:
 | 沒有 `workflow` | Component 帶 `spec.workflow` 指定建置器與參數 |
 | 沒有 WorkflowRun | 用 WorkflowRun 觸發一次建置 |
 
+這個差異在 OpenChoreo Web 介面上有非常鮮明的體現：
+
+#### 預建映像元件的 BUILD 分頁：未啟用
+
+在第 3 課中，由於 `react-starter` 與 `my-greeter` 都採用外部 Docker Registry 的既有映像，在控制台切換至 **BUILD** 分頁時，平台會直接提示 `Workflows Not Available`（如下圖），因為該元件不需要內部 CI 建置。
+
+![預建映像元件的 BUILD 分頁顯示未啟用](img/04-build-workflows-not-available.png)
+
+#### 原始碼元件的 BUILD 分頁：啟用 Configurations 面板
+
+一旦元件 YAML 宣告了 `spec.workflow`（如本課的 `greeting-service`），OpenChoreo 的 **BUILD** 分頁就會被立即激活！點擊左側的 **Configurations**，平台會自動解析出 Git 來源網址、分支 (`main`)、Dockerfile 相對路徑以及建置脈絡，右上角亦提供 **Edit Configurations** 按鈕供隨時在介面上調整。
+
+![greeting-service 在 OpenChoreo 介面中的建置設定面板](img/04-workflow-configurations.png)
+
 Positive
 : `WorkflowRun` 的 labels(`openchoreo.dev/project`、`openchoreo.dev/component`)把這次建置歸屬到某個 Component。建置成功後,平台據此把新映像接回該 Component。
 
@@ -282,11 +335,28 @@ Duration: 12
 kubectl apply -f greeting-service.yaml
 ```
 
-### 看 WorkflowRun
+### 看 WorkflowRun (命令列與 Web 介面)
+
+你可以在命令列查詢 CR 狀態：
 
 ```bash
 kubectl get workflowrun -n default
 ```
+
+也可以直接切換到 OpenChoreo 控制台 `greeting-service` ➔ **BUILD** 分頁。平台會列出完整的 **Workflow Runs** 歷史清單：
+
+![OpenChoreo 控制台中的 Workflow Runs 歷程清單與觸發按鈕](img/04-workflow-runs-list.png)
+
+* **右上角「Build Latest」按鈕**：除了打 `kubectl apply` 外，開發者隨時可以在網頁上一鍵觸發最新分支的建置。
+* **建置狀態與版本審計**：表格清晰列出 Run 名稱、狀態徽章（如綠色 `Succeeded` 或藍色 `Running`）、關聯 commit 與建置耗時。
+
+### 原生管線步驟與即時日誌視圖
+
+點選表格中的任一筆 Run 紀錄，OpenChoreo 會進入專屬的管線執行詳情頁面 (`/workflows/run/<run-id>`)：
+
+![OpenChoreo 原生管線四步驟與終端即時日誌視圖](img/04-workflow-run-detail-logs.png)
+
+開發者可以展開任一步驟的卡片（如 `checkout-source`、`build-image`、`publish-image`、`generate-workload-cr`），直接在瀏覽器即時閱讀終端日誌（包括 Podman 編譯輸出或平台產生 Workload CR 的過程），完全不需要下指令 `kubectl logs`。
 
 ### 看底層的 Argo Workflow
 
@@ -297,7 +367,9 @@ kubectl get pods -n workflows-default
 
 ### 或用 Argo Workflows UI
 
-開啟 <http://localhost:10081> 可以看到圖形化的步驟。
+開啟 <http://localhost:10081>（預設帳號密碼可略過或關閉歡迎提示），點選 `workflows-default` 命名空間下的工作流，可以看到圖形化渲染的完整有向無環圖 (DAG)：
+
+![Argo Workflows UI 渲染的四步驟 DAG 管線拓撲圖](img/04-argo-workflows-dag.png)
 
 ### 建置管線的四個步驟
 
@@ -328,7 +400,15 @@ kubectl get workload -n default
 kubectl get componentrelease,releasebinding -n default | grep greeting
 ```
 
-呼叫服務(從 HTTPRoute 取出主機名稱與路徑前綴):
+#### 在 OpenChoreo DEPLOY 分頁觀察自動部署
+
+建置成功後，平台自動生成帶有唯讀映像 Hash 的 `ComponentRelease`（如 `greeting-service-74d6cb4f4b`），並根據 `autoDeploy: true` 自動發布到 Development 環境：
+
+![建置成功後自動發布至 Development 環境的 DEPLOY 管線](img/04-greeting-deploy-pipeline.png)
+
+#### 呼叫服務
+
+從 HTTPRoute 取出主機名稱與路徑前綴：
 
 ```bash
 HOSTNAME=$(kubectl get httproute -A -l openchoreo.dev/component=greeting-service \
@@ -339,6 +419,22 @@ curl "http://${HOSTNAME}:19080${PATH_PREFIX}/greeter/greet"
 ```
 
 預期輸出 `Hello, Stranger!`。
+
+#### 在 Web UI 檢視端點並以瀏覽器調用
+
+你也可以在 DEPLOY 介面點擊 Development 環境卡片上的 **View Endpoints**（或 **View All**），平台會彈出端點資訊視窗，清楚呈現自動配置的路由前綴：
+
+![OpenChoreo View Endpoints 彈窗顯示自動配置的服務端點](img/04-greeting-endpoints-modal.png)
+
+複製其中的 External 網址，在瀏覽器中直接造訪：
+
+```text
+http://development-default.openchoreoapis.localhost:19080/greeting-service-greeter-api/greeter/greet
+```
+
+![瀏覽器直接呼叫服務端點並獲得回應](img/04-browser-call-greeting.png)
+
+瀏覽器順利呈現 `Hello, Stranger!`，驗證了從 Git 原始碼、平台自動建置、推送到 Registry、自動產生 Workload 到網關流量轉發的完整端到端自動化！
 
 Positive
 : 這個範例的端點名稱是 `greeter-api`,所以路徑前綴是 `/greeting-service-greeter-api`,和第 3 課的 `/my-greeter-http` 不同。路徑前綴由 Workload 的端點名稱決定,因此腳本直接從 HTTPRoute 讀取最保險。

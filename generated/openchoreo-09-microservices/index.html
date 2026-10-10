@@ -96,6 +96,14 @@
 <pre><code>&lt;服務名&gt;.&lt;namespace&gt;.svc.cluster.local:&lt;port&gt;
 </code></pre>
 <p>你在第 9 課會看到 frontend 收到的環境變數,就是這種格式(例如 <code>cart.dp-default-...svc.cluster.local:7070</code>)。<strong>OpenChoreo 幫你算出這個位址並注入環境變數</strong>,你只需宣告「我依賴 cart 的 grpc 端點」。</p>
+<h2 is-upgraded>Data Plane 東西向流量治理與 NetworkPolicy 零信任</h2>
+<p>在傳統 Kubernetes 叢集中,所有 Pod 預設處於同一個平面網路(Flat Network),彼此可以任意連通,一旦某個邊緣 Pod 被入侵,整個叢集就暴露在橫向滲透的風險中。</p>
+<p>OpenChoreo 在 <strong>Data Plane</strong> 實踐了嚴格的「零信任(Zero Trust)」治理原則:</p>
+<ul>
+<li><strong>南北向流量(外部進出)</strong>: 只有宣告 <code>visibility: [external]</code> 的端點,平台才會在 Envoy 閘道配置 <code>HTTPRoute</code>,對外開放存取(如本課的 <code>frontend</code>)。</li>
+<li><strong>東西向流量(內部呼叫)</strong>: 其餘內部微服務端點僅在 Project 內可見,平台會根據 <code>Component.spec.dependencies</code> 自動計算內部 CoreDNS 位址(<code><service>.<namespace>.svc.cluster.local:<port></code>),並注入給呼叫端的環境變數。</li>
+<li><strong>自動 NetworkPolicy 微隔離</strong>: 平台預設套用 Default Deny 政策。只有在宣告依賴時,控制器才會自動在 Data Plane 生成允許通訊的 <code>NetworkPolicy</code> 規則。如果 <code>frontend</code> 試圖直連未宣告的內部服務,封包會在核心層被直接丟棄。</li>
+</ul>
 <h2 is-upgraded>有狀態與無狀態</h2>
 <table>
 <tr><td colspan="1" rowspan="1"></td><td colspan="1" rowspan="1"><p>無狀態(Stateless)</p>
@@ -145,17 +153,7 @@
       </google-codelab-step>
     
       <google-codelab-step label="架構" duration="4">
-        <pre><code>                        ┌──────────┐
- 瀏覽器 ──(外部)──────▶ │ frontend │
-                        └────┬─────┘
-        ┌───────┬────────┬───┴────┬─────────┬──────────┬───────────┐
-        ▼       ▼        ▼        ▼         ▼          ▼           ▼
-       ad     cart   checkout  currency  recommendation shipping productcatalog
-                │        │
-                ▼        ├──▶ payment
-             [redis]     ├──▶ email
-                         └──▶ shipping / currency / productcatalog / cart
-</code></pre>
+        <p class="image-container"><img alt="Online Boutique 微服務拓撲與服務相依性全景圖" src="img/eab7c1df2bba827f.svg"></p>
 <table>
 <tr><td colspan="1" rowspan="1"><p>服務</p>
 </td><td colspan="1" rowspan="1"><p>語言</p>
@@ -353,7 +351,8 @@ grep -o &#34;Your order is complete&#34; /tmp/order.html
       </google-codelab-step>
     
       <google-codelab-step label="排錯演練" duration="8">
-        <p>練習「從症狀倒推原因」。我們讓 <code>productcatalog</code> 下線:</p>
+        <p class="image-container"><img alt="微服務連鎖故障排錯演練流程" src="img/37a39f0a6aeb420b.svg"></p>
+<p>練習「從症狀倒推原因」。我們讓 <code>productcatalog</code> 下線:</p>
 <pre><code language="language-bash" class="language-bash">kubectl patch releasebinding productcatalog-development -n default --type merge \
   -p &#39;{&#34;spec&#34;:{&#34;componentTypeEnvironmentConfigs&#34;:{&#34;replicas&#34;:0}}}&#39;
 sleep 15

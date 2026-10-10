@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">從 Workload 需求到真正 Kubernetes 資源的「食譜模型」</text>
+    <text class="c-sub" x="0" y="20">OpenChoreo 如何將開發者撰寫的簡潔規格，代入 ComponentType 模板合成完整 K8s 清單</text>
+  </g>
+
+  <!-- Left: Inputs (Ingredients) -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="250" height="340" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+    <text class="c-head" x="125" y="26" text-anchor="middle" fill="#174ea6">食材 (開發者輸入)</text>
+    <text class="c-text" x="125" y="44" text-anchor="middle" fill="#5f6368">只專注業務程式執行需求</text>
+
+    <!-- Workload card -->
+    <g transform="translate(15, 58)">
+      <rect width="220" height="110" rx="5" fill="#ffffff" stroke="#1a73e8"/>
+      <text class="c-head" x="10" y="20" font-size="12" fill="#174ea6">Workload YAML (~30行)</text>
+      <text class="c-code" x="10" y="38">• image: hashicorp/http-echo</text>
+      <text class="c-code" x="10" y="54">• port: 8080</text>
+      <text class="c-code" x="10" y="70">• env: [TEXT="Hello..."]</text>
+      <text class="c-code" x="10" y="86" fill="#137333">• visibility: external</text>
+      <text class="c-text" x="10" y="102" font-size="10" fill="#5f6368">宣告需求，不寫實作細節</text>
+    </g>
+
+    <!-- Component & ReleaseBinding -->
+    <g transform="translate(15, 178)">
+      <rect width="220" height="70" rx="5" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="10" y="20" font-size="12" fill="#202124">Component 參數</text>
+      <text class="c-text" x="10" y="36" font-size="11" fill="#5f6368">• type: deployment/service</text>
+      <text class="c-text" x="10" y="52" font-size="11" fill="#5f6368">• autoDeploy: true</text>
+    </g>
+
+    <g transform="translate(15, 258)">
+      <rect width="220" height="68" rx="5" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="10" y="20" font-size="12" fill="#202124">ReleaseBinding (環境覆寫)</text>
+      <text class="c-text" x="10" y="36" font-size="11" fill="#5f6368">• replicas: 1 (dev 環境)</text>
+      <text class="c-text" x="10" y="52" font-size="11" fill="#5f6368">• 注入環境專屬 ConfigMap</text>
+    </g>
+  </g>
+
+  <!-- Middle: The Recipe & Chef -->
+  <g class="f-main" transform="translate(305, 60)">
+    <rect width="240" height="340" rx="8" fill="#fef7e0" stroke="#e37400" stroke-width="1.5"/>
+    <text class="c-head" x="120" y="26" text-anchor="middle" fill="#b06000">食譜與廚師 (平台模板)</text>
+    <text class="c-text" x="120" y="44" text-anchor="middle" fill="#5f6368">平台團隊編寫的黃金路徑</text>
+
+    <!-- ComponentType box -->
+    <g transform="translate(15, 60)">
+      <rect width="210" height="150" rx="6" fill="#ffffff" stroke="#f9ab00"/>
+      <text class="c-head" x="12" y="24" font-size="13" fill="#b06000">📖 ComponentType</text>
+      <text class="c-code" x="12" y="44" font-size="11">deployment/service</text>
+      <text class="c-text" x="12" y="66" font-size="11" fill="#3c4043">內建最佳實務模板：</text>
+      <text class="c-text" x="12" y="84" font-size="10.5" fill="#5f6368">• 安全 Context 與非 root 限制</text>
+      <text class="c-text" x="12" y="102" font-size="10.5" fill="#5f6368">• 資源請求預設值 (Requests)</text>
+      <text class="c-text" x="12" y="120" font-size="10.5" fill="#5f6368">• CEL 模板表達式合成邏輯</text>
+      <text class="c-text" x="12" y="138" font-size="10.5" fill="#5f6368">• 統一標籤注入 (Traceability)</text>
+    </g>
+
+    <!-- Engine reconciler -->
+    <g transform="translate(15, 225)">
+      <rect width="210" height="98" rx="6" fill="#ffffff" stroke="#e37400"/>
+      <text class="c-head" x="12" y="24" font-size="12" fill="#202124">⚙️ OpenChoreo 控制器</text>
+      <text class="c-text" x="12" y="44" font-size="11" fill="#5f6368">讀取食材與食譜</text>
+      <text class="c-text" x="12" y="62" font-size="11" fill="#137333" font-weight="600">→ 自動渲染出上百行</text>
+      <text class="c-text" x="12" y="80" font-size="11" fill="#137333" font-weight="600">合規的 Kubernetes 清單</text>
+    </g>
+  </g>
+
+  <!-- Right: Outputs (Dishes) -->
+  <g class="f-main" transform="translate(570, 60)">
+    <rect width="240" height="340" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+    <text class="c-head" x="120" y="26" text-anchor="middle" fill="#0d652d">佳餚 (生成真實 K8s 資源)</text>
+    <text class="c-text" x="120" y="44" text-anchor="middle" fill="#5f6368">Data Plane 真正跑的東西</text>
+
+    <!-- Generated K8s resources -->
+    <g transform="translate(15, 58)">
+      <rect width="210" height="74" rx="5" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="10" y="20" font-size="12" fill="#137333">Deployment</text>
+      <text class="c-code" x="10" y="36">apps/v1 Deployment</text>
+      <text class="c-text" x="10" y="52" font-size="10.5" fill="#5f6368">• 包含 Pod 模板、環境變數</text>
+      <text class="c-text" x="10" y="66" font-size="10.5" fill="#5f6368">• 副本數管理與健康探針</text>
+    </g>
+
+    <g transform="translate(15, 142)">
+      <rect width="210" height="74" rx="5" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="10" y="20" font-size="12" fill="#137333">Service</text>
+      <text class="c-code" x="10" y="36">v1 ClusterIP Service</text>
+      <text class="c-text" x="10" y="52" font-size="10.5" fill="#5f6368">• 內部服務發現與負載平衡</text>
+      <text class="c-text" x="10" y="66" font-size="10.5" fill="#5f6368">• TargetPort 映射至 8080</text>
+    </g>
+
+    <g transform="translate(15, 226)">
+      <rect width="210" height="98" rx="5" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="10" y="20" font-size="12" fill="#137333">HTTPRoute (Gateway API)</text>
+      <text class="c-code" x="10" y="36">gateway.networking.k8s.io</text>
+      <text class="c-text" x="10" y="52" font-size="10.5" fill="#5f6368">• 路徑前綴比對規則</text>
+      <text class="c-text" x="10" y="66" font-size="10.5" fill="#5f6368">• 剝除前綴並轉發給 Service</text>
+      <text class="c-text" x="10" y="84" font-size="10" fill="#137333" font-weight="600">✓ 外部網路成功連通</text>
+    </g>
+  </g>
+
+  <!-- Connecting Arrows -->
+  <line x1="280" y1="200" x2="305" y2="200" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="545" y1="200" x2="570" y2="200" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+</svg>

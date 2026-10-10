@@ -74,15 +74,15 @@ OpenChoreo 的 ComponentRelease 就是這樣的不可變快照,它的名稱尾�
 | 晉升 | 把某家書店的上架版次,改成較新的一版 |
 | 回滾 | 改回舊版次 |
 
+![Release 與 ReleaseBinding 指標模型](img/05-release-binding-model.svg)
+
 這樣你就能理解:**晉升不是重新建置、重新打包,只是改變指標**。所以非常快、非常安全。
 
 ### DeploymentPipeline:有向圖
 
 DeploymentPipeline 規定了「環境之間可以怎麼走」,本質上是一張**有向圖**:
 
-```
-development ──▶ staging ──▶ production
-```
+![DeploymentPipeline 有向無環圖與階段推進](img/05-promotion-dag.svg)
 
 它的價值是**強制流程**:例如規定 production 只能從 staging 來,不能從 development 直接跳過去。Project 透過 `deploymentPipelineRef` 選擇使用哪一條管線,所以同一個 Project 的所有元件遵守同一套流程。
 
@@ -92,6 +92,7 @@ development ──▶ staging ──▶ production
 * 之後的環境:需要**明確的晉升動作**(人或自動化流程決定)
 
 這個設計讓「快速迭代」與「謹慎上線」並存。
+
 
 Positive
 : 接下來你會親手驗證這些概念:建立三個環境的綁定、讓 development 前進而其他環境不動、再做晉升與回滾。
@@ -140,6 +141,115 @@ kubectl get project default -n default -o jsonpath='{.spec}'
 | Environment | 平台工程師 | 一個部署階段,綁定一個 DataPlane |
 | DeploymentPipeline | 平台工程師 | 定義環境間可以怎麼晉升 |
 | ReleaseBinding | 開發者/自動化 | 把某個 Release 釘在某個環境,並帶環境覆寫 |
+
+### Control Plane 與 Data Plane 的橋樑:Environment 與 ClusterDataPlane
+
+在架構上,`Environment` 屬於 **Control Plane** 的邏輯抽象,它如何落實到具體承載流量的 K8s 叢集?關鍵在於其 `spec.dataPlaneRef` 欄位:
+
+```bash
+kubectl get environment development -n default -o yaml
+```
+
+你會看到它精確指向一個 `ClusterDataPlane`:
+
+```yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: development
+spec:
+  dataPlaneRef:
+    kind: ClusterDataPlane
+    name: default
+  isProduction: false
+```
+
+#### 多叢集實體隔離機制
+
+* **單一控制台,多個資料叢集**: 在多叢集企業環境中,`development` 可以指向測試叢集,而 `production` 指向實體隔離的生產專用 EKS/GKE 叢集(`ClusterDataPlane`)。
+* **命名空間自動微隔離**: 當 ReleaseBinding 生效時,OpenChoreo 控制器會透過 `cluster-agent` 在對應的 Data Plane 上自動開闢專屬命名空間:`dp-<namespace>-<project>-<environment>-<hash>`(例如本課實測的 `dp-default-default-development-f8e58905`),確保不同環境的 Pod 具備嚴格的網路與資源邊界。
+* **閘道與觀測平面自動綁定**: 查看 `kubectl get clusterdataplane default -o yaml`,你會發現 Data Plane 不僅配置了 Envoy Proxy 監聽埠(`19080`),還宣告了 `observabilityPlaneRef`,自動將該資料平面的日誌與指標接入中樞。
+
+#### 實戰拆解：`ClusterDataPlane` 核心規格與心跳機制
+
+現在，讓我們用 `kubectl` 親自檢視這個定義整個 Data Plane 的核心 CRD：
+
+```bash
+kubectl get clusterdataplane default -o yaml
+```
+
+你會看到類似以下的核心欄位：
+
+```yaml
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterDataPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  clusterAgent:
+    clientCA:
+      value: "-----BEGIN CERTIFICATE-----\n..."
+  gateway:
+    ingress:
+      external:
+        http:
+          host: openchoreoapis.localhost
+          listenerName: http
+          port: 19080
+        name: gateway-default
+        namespace: openchoreo-data-plane
+  observabilityPlaneRef:
+    kind: ClusterObservabilityPlane
+    name: default
+status:
+  agentConnection:
+    connected: true
+    connectedAgents: 1
+    lastHeartbeatTime: "2026-10-10T07:36:30Z"
+    message: 1 agent connected
+  conditions:
+  - status: "True"
+    type: Created
+```
+
+| 核心區塊 | 作用與底層機制 |
+|---|---|
+| `spec.clusterAgent.clientCA` | **mTLS 零信任連線依據**。Data Plane 內運行的 Agent 憑藉此 CA 簽發的客戶端憑證，向 Control Plane 建立反向 gRPC 長連線。 |
+| `spec.gateway.ingress.external` | **Envoy 閘道拓撲規範**。宣告外部請求的主機後綴（`openchoreoapis.localhost`）、負載平衡監聽埠（`19080`）以及 Envoy Proxy 所在的平台命名空間（`openchoreo-data-plane`）。 |
+| `spec.observabilityPlaneRef` | **關聯可觀測性**。指名此資料平面由哪個 `ClusterObservabilityPlane` 負責抓取日誌與指標。 |
+| `status.agentConnection` | **連線健康度與即時心跳**。顯示當前是否有 Agent 連線（`connected: true`）以及最新的心跳同步時間（`lastHeartbeatTime`）。 |
+
+#### Data Plane 實戰排錯指南 (Troubleshooting Runbook)
+
+當開發者反映「服務已顯示 Healthy，但在 Data Plane 透過網址連不上或噴 503」時，SRE 與維運工程師可依照以下標準四部曲進行 Data Plane 故障排查：
+
+1. **第一關：確認跨平面通訊通道存活**
+   ```bash
+   kubectl get clusterdataplane default -o jsonpath='{.status.agentConnection}'
+   kubectl logs -n openchoreo-data-plane -l app.kubernetes.io/name=cluster-agent-dataplane --tail=50
+   ```
+   若 `connected` 為 `false`，代表 Control Plane 無法向 Data Plane 下發指令，需檢查網路連線或 mTLS 憑證。
+
+2. **第二關：確認宣告式合約渲染成功**
+   ```bash
+   kubectl get renderedrelease -n default
+   kubectl describe renderedrelease <component>-<environment> -n default
+   ```
+   檢查 `status.conditions` 是否包含 `ResourcesApplied=True`。若為 False，代表 Kubernetes 原生工件在 Data Plane 套用失敗（例如映像拉取失敗或名稱衝突）。
+
+3. **第三關：確認 Envoy Gateway 與 HTTPRoute 生效**
+   ```bash
+   kubectl get httproute -A
+   kubectl describe httproute <route-name> -n dp-...
+   ```
+   檢查 `status.parents[0].conditions` 中的 `Accepted` 與 `ResolvedRefs` 是否皆為 `True`。若為 False，代表路徑衝突或後端 Service 找不到。
+
+4. **第四關：確認零信任 NetworkPolicy 未意外封鎖流量**
+   ```bash
+   kubectl get networkpolicy -n dp-... -o yaml
+   ```
+   OpenChoreo 預設配置嚴格的白名單。確認 Ingress 規則是否放行了來源（Envoy 閘道或同專案依賴元件）。
 
 ## 部署到 development
 Duration: 4
@@ -285,6 +395,14 @@ for e in development staging production; do
   curl -s http://$e-default.openchoreoapis.localhost:19080/promo-demo-http/greeter/greet; echo " <- $e"
 done
 ```
+
+在入口網站的 DEPLOY 分頁中，可視覺化檢視三個環境的 Promotion 流水線：
+
+![多環境 Promotion 交付流水線](img/05-promotion-pipeline.png)
+
+點擊特定環境卡片，可在右側側邊欄檢視目前釘選的 Release 雜湊、端點網址與 **View K8s Artifacts** 按鈕：
+
+![環境部署細節與 K8s Artifacts 檢視](img/05-env-deployment-details.png)
 
 Negative
 : 本課是手寫 ReleaseBinding,為了讓你看清楚結構,所以 `kubectl apply` 不會檢查是否符合 DeploymentPipeline 的晉升路徑。實務上建議用 `occ component deploy --to` 或 GitOps 流程,讓管線規則發揮作用(見最後一節)。

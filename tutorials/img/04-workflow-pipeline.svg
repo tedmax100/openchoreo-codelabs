@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 425" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="425" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">Workflow Plane 4 步驟原始碼建置管線 (Source-to-Image Pipeline)</text>
+    <text class="c-sub" x="0" y="20">Argo Workflows 在獨立的 Workflow Plane 執行隔離 Pod，自動完成代碼檢出、容器建置與推送</text>
+  </g>
+
+  <!-- Trigger Card -->
+  <g class="f-main" transform="translate(30, 56)">
+    <rect width="780" height="46" rx="6" fill="#e8f0fe" stroke="#1a73e8"/>
+    <text class="c-head" x="15" y="22" fill="#174ea6" font-size="12">觸發來源：開發者提交 WorkflowRun</text>
+    <text class="c-text" x="15" y="38" fill="#5f6368" font-size="11">引用 <tspan class="f-code" fill="#174ea6">ClusterWorkflow: dockerfile-builder</tspan> • 傳入 Git 儲存庫 URL 與分支名 (branch: main)</text>
+    <rect x="640" y="10" width="125" height="26" rx="4" fill="#1a73e8"/>
+    <text class="c-head" x="702" y="27" text-anchor="middle" fill="#ffffff" font-size="11">Argo 引擎調度</text>
+  </g>
+
+  <!-- Pipeline Container Box -->
+  <g class="f-main" transform="translate(30, 114)">
+    <rect width="780" height="230" rx="8" fill="#fef7e0" fill-opacity="0.3" stroke="#f9ab00" stroke-width="1.5"/>
+    <rect x="15" y="10" width="220" height="22" rx="4" fill="#fef7e0"/>
+    <text class="c-head" x="125" y="25" text-anchor="middle" fill="#b06000" font-size="12">⚙️ Workflow Plane 內部執行 Pods</text>
+
+    <!-- Step 1: Checkout -->
+    <g transform="translate(20, 42)">
+      <rect width="165" height="170" rx="6" fill="#ffffff" stroke="#dadce0" stroke-width="1.2"/>
+      <circle cx="22" cy="22" r="10" fill="#1a73e8"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">1</text>
+      <text class="c-head" x="38" y="26" fill="#202124" font-size="12">checkout</text>
+
+      <rect x="12" y="44" width="141" height="42" rx="4" fill="#f8f9fa"/>
+      <text class="c-text" x="18" y="60" font-size="10.5" fill="#5f6368">Git Clone 原始碼</text>
+      <text class="c-code" x="18" y="76" font-size="10">git clone repo</text>
+
+      <text class="c-text" x="12" y="106" font-size="10.5" fill="#3c4043">• 拉取指定 Commit</text>
+      <text class="c-text" x="12" y="122" font-size="10.5" fill="#3c4043">• 輸出至共用 Volume</text>
+      <rect x="12" y="136" width="141" height="22" rx="3" fill="#e6f4ea"/>
+      <text class="c-text" x="82" y="151" text-anchor="middle" font-size="10" fill="#137333" font-weight="600">✓ 代碼就緒</text>
+    </g>
+
+    <!-- Arrow 1 -> 2 -->
+    <line x1="190" y1="127" x2="210" y2="127" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+    <!-- Step 2: Build -->
+    <g transform="translate(210, 42)">
+      <rect width="170" height="170" rx="6" fill="#ffffff" stroke="#dadce0" stroke-width="1.2"/>
+      <circle cx="22" cy="22" r="10" fill="#e37400"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">2</text>
+      <text class="c-head" x="38" y="26" fill="#202124" font-size="12">build</text>
+
+      <rect x="12" y="44" width="146" height="42" rx="4" fill="#fef7e0"/>
+      <text class="c-text" x="18" y="60" font-size="10.5" fill="#b06000">Podman 容器建置</text>
+      <text class="c-code" x="18" y="76" font-size="10">podman build -t ...</text>
+
+      <text class="c-text" x="12" y="106" font-size="10.5" fill="#3c4043">• 無 daemon 模式建置</text>
+      <text class="c-text" x="12" y="122" font-size="10.5" fill="#3c4043">• 讀取 Dockerfile</text>
+      <rect x="12" y="136" width="146" height="22" rx="3" fill="#e6f4ea"/>
+      <text class="c-text" x="85" y="151" text-anchor="middle" font-size="10" fill="#137333" font-weight="600">✓ 映像建置成功</text>
+    </g>
+
+    <!-- Arrow 2 -> 3 -->
+    <line x1="385" y1="127" x2="405" y2="127" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+    <!-- Step 3: Publish -->
+    <g transform="translate(405, 42)">
+      <rect width="175" height="170" rx="6" fill="#ffffff" stroke="#dadce0" stroke-width="1.2"/>
+      <circle cx="22" cy="22" r="10" fill="#137333"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">3</text>
+      <text class="c-head" x="38" y="26" fill="#202124" font-size="12">publish</text>
+
+      <rect x="12" y="44" width="151" height="42" rx="4" fill="#e6f4ea"/>
+      <text class="c-text" x="18" y="60" font-size="10.5" fill="#137333">推送到 Registry</text>
+      <text class="c-code" x="18" y="76" font-size="9.5">registry.openchoreo...</text>
+
+      <text class="c-text" x="12" y="106" font-size="10.5" fill="#3c4043">• 推送至內建倉庫</text>
+      <text class="c-text" x="12" y="122" font-size="10.5" fill="#3c4043">• 產出 SHA256 Digest</text>
+      <rect x="12" y="136" width="151" height="22" rx="3" fill="#e6f4ea"/>
+      <text class="c-text" x="87" y="151" text-anchor="middle" font-size="10" fill="#137333" font-weight="600">✓ 映像已持久化</text>
+    </g>
+
+    <!-- Arrow 3 -> 4 -->
+    <line x1="585" y1="127" x2="605" y2="127" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+    <!-- Step 4: Generate Workload -->
+    <g transform="translate(605, 42)">
+      <rect width="155" height="170" rx="6" fill="#ffffff" stroke="#dadce0" stroke-width="1.2"/>
+      <circle cx="22" cy="22" r="10" fill="#7b1fa2"/>
+      <text class="badge" x="22" y="26" fill="#ffffff">4</text>
+      <text class="c-head" x="38" y="26" fill="#202124" font-size="12">gen-workload</text>
+
+      <rect x="12" y="44" width="131" height="42" rx="4" fill="#f3e8fd"/>
+      <text class="c-text" x="18" y="60" font-size="10.5" fill="#7b1fa2">自動產出規格</text>
+      <text class="c-code" x="18" y="76" font-size="10">workload.yaml</text>
+
+      <text class="c-text" x="12" y="106" font-size="10" fill="#3c4043">• 帶入最新映像 Tag</text>
+      <text class="c-text" x="12" y="120" font-size="10" fill="#3c4043">• 回寫至控制平面</text>
+      <rect x="12" y="136" width="131" height="22" rx="3" fill="#e6f4ea"/>
+      <text class="c-text" x="77" y="151" text-anchor="middle" font-size="10" fill="#137333" font-weight="600">✓ 觸發發布部署</text>
+    </g>
+  </g>
+
+  <!-- Bottom Result Flow -->
+  <g class="f-main" transform="translate(30, 354)">
+    <rect width="780" height="52" rx="6" fill="#e6f4ea" stroke="#137333"/>
+    <text class="c-head" x="15" y="22" fill="#0d652d" font-size="12">建置完成後續：</text>
+    <text class="c-text" x="15" y="38" fill="#137333" font-size="11">Control Plane 自動合成新 ComponentRelease → autoDeploy 立即更新 development 環境 ReleaseBinding → Data Plane 跑起新版本 Pod！</text>
+  </g>
+
+</svg>

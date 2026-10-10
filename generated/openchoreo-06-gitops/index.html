@@ -100,6 +100,7 @@
 </td><td colspan="1" rowspan="1"><p><code>git revert</code>,代理人自動套用</p>
 </td></tr>
 </table>
+<p class="image-container"><img alt="推送式 vs 拉取式 GitOps 架構對比" src="img/d864f6ae67a8fed4.svg"></p>
 <h2 is-upgraded>Argo CD 的核心名詞</h2>
 <table>
 <tr><td colspan="1" rowspan="1"><p>名詞</p>
@@ -127,13 +128,221 @@
 <p>注意 <strong>Sync 與 Health 是兩件事</strong>:Synced 只代表「和 Git 一致」,不代表應用正常運作。</p>
 <h2 is-upgraded>兩層調和迴圈</h2>
 <p>這一課很有趣,因為有<strong>兩個</strong>調和迴圈疊在一起:</p>
-<pre><code>Git ──(Argo CD 調和)──▶ 叢集裡的 Component/Workload ──(OpenChoreo 控制器調和)──▶ Deployment/Service ...
-</code></pre>
+<p class="image-container"><img alt="GitOps 兩層調和迴圈與 Self-Healing 機制" src="img/23090738d51a93b0.svg"></p>
 <ul>
 <li>Argo CD 負責「Git → OpenChoreo 資源」</li>
 <li>OpenChoreo 控制器負責「OpenChoreo 資源 → Kubernetes 資源」</li>
 </ul>
 <p>兩者都是第 2 課說的「宣告期望狀態、持續調和」,所以能無縫銜接。</p>
+<h2 is-upgraded>Argo CD 與 OpenChoreo 的職責分工：以後到底在哪裡維護？</h2>
+<p>很多企業已經導入了 Argo CD 做 GitOps。引入 OpenChoreo 後，團隊常常會問：<strong>「兩者有何差別？以後我們到底要在哪裡維護部署這整件事？」</strong></p>
+<h3 is-upgraded>傳統 GitOps vs OpenChoreo GitOps</h3>
+<table>
+<tr><td colspan="1" rowspan="1"><p>維度</p>
+</td><td colspan="1" rowspan="1"><p>傳統 Argo CD GitOps</p>
+</td><td colspan="1" rowspan="1"><p>OpenChoreo + Argo CD 雙層 GitOps</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>Git 裡維護什麼</strong></p>
+</td><td colspan="1" rowspan="1"><p>上千行原生 K8s YAML（Deployment、Service、Ingress、HPA、NetworkPolicy...）或龐大的 Helm/Kustomize</p>
+</td><td colspan="1" rowspan="1"><p><strong>極簡的高階業務契約</strong>（僅 30~50 行 <code>Component</code> 與 <code>Workload</code>）</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>誰寫這些 YAML</strong></p>
+</td><td colspan="1" rowspan="1"><p>業務開發者必須被迫學習 K8s 網路、探針、安全標籤語法</p>
+</td><td colspan="1" rowspan="1"><p>業務開發者只填寫業務參數（映像檔、環境變數、對外埠）</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>規範與安全護欄</strong></p>
+</td><td colspan="1" rowspan="1"><p>仰賴人工 Code Review 或外掛 OPA/Kyverno 策略檢查</p>
+</td><td colspan="1" rowspan="1"><p>平台工程師在 <code>ComponentType</code> 定義 Golden Path，自動生成合規架構</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>開發者除錯視圖</strong></p>
+</td><td colspan="1" rowspan="1"><p>只能在 Argo CD 看到龐大複雜的 Pod 樹狀圖，缺少日誌與相依圖</p>
+</td><td colspan="1" rowspan="1"><p>開發者在 <strong>OpenChoreo Portal</strong> 享有專案拓撲、日誌串流與端點一覽</p>
+</td></tr>
+</table>
+<h3 is-upgraded>企業落地分工：不同角色在哪裡維護？</h3>
+<ol type="1">
+<li><strong>業務開發團隊 (App Developers)</strong><ul>
+<li><strong>日常維護地點</strong>：<strong>應用的 Git 倉庫</strong>。</li>
+<li><strong>操作方式</strong>：只維護 <code>apps/<app>/component.yaml</code> 與 <code>workload.yaml</code>。若要改映像檔或環境變數，直接開 PR 提交 Git。</li>
+<li><strong>狀態與除錯</strong>：日常回到 <strong>OpenChoreo Portal (Backstage)</strong> 介面。查看元件健康度、查日誌、抓端點網址，完全不需要進 Kubernetes 或操作 Argo CD！</li>
+</ul>
+</li>
+<li><strong>平台工程師 (Platform Engineers)</strong><ul>
+<li><strong>日常維護地點</strong>：<strong>平台基礎設施 Git 倉庫</strong>。</li>
+<li><strong>操作方式</strong>：維護標準的 <code>ComponentType</code>（如 <code>deployment/service</code>）、<code>Trait</code>（監控與儲存附加能力）與 <code>DeploymentPipeline</code>（晉升規則）。</li>
+<li><strong>效益</strong>：只要更新一次平台範本，全公司數百個微服務自動套用最新架構，無需逐一修改各應用的 Helm Chart。</li>
+</ul>
+</li>
+<li><strong>維運與 SRE 團隊 (Operations / SRE)</strong><ul>
+<li><strong>日常維護地點</strong>：<strong>Argo CD 控制台 + OpenChoreo Observability</strong>。</li>
+<li><strong>操作方式</strong>：在 <strong>Argo CD UI</strong> 監看 Git 同步健康度（Sync Status / OutOfSync）與防漂移自我修復（Self-Healing）；在 OpenSearch / Prometheus 監看微服務系統指標。</li>
+</ul>
+</li>
+</ol>
+<h3 is-upgraded>OpenChoreo 的核心勢能：從「搬運孤立資源」到「賦予業務關聯」</h3>
+<p>如果 Argo CD 已經能負責 GitOps 同步,那為什麼企業還需要 OpenChoreo？<strong>答案正是「關聯性 (Relationships &amp; Context)」與「平台抽象治理」！</strong></p>
+<p>在傳統 Kubernetes 與 Argo CD 中,所有資源都是<strong>孤立的技術積木</strong>(Deployment 只是 Deployment,Service 只是 Service,彼此僅靠 label selector 弱關聯)。Argo CD 知道如何把這些 YAML 塞給 K8s,但它<strong>完全不知道這些資源在商業與架構上的意義</strong>。</p>
+<p>OpenChoreo 為 GitOps 注入了四大維度的「語意關聯性」:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>關聯維度</p>
+</td><td colspan="1" rowspan="1"><p>傳統 Argo CD 看到的</p>
+</td><td colspan="1" rowspan="1"><p>OpenChoreo 賦予的業務關聯</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>1. 領域架構關聯<br></strong>(Architecture Graph)</p>
+</td><td colspan="1" rowspan="1"><p>幾十個扁平的 Pod 與 Service,看不出誰呼叫誰</p>
+</td><td colspan="1" rowspan="1"><p><strong><code>Project</code></strong><strong> ➔ </strong><strong><code>Component</code></strong><strong> ➔ </strong><strong><code>Dependencies</code></strong>: 透過領域驅動設計(DDD),在 UI 的 DIAGRAM 自動繪製微服務拓撲與呼叫依賴鏈。</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>2. 環境晉升關聯<br></strong>(Promotion Pipeline)</p>
+</td><td colspan="1" rowspan="1"><p>每個環境一個獨立資料夾,各環境間缺乏關係</p>
+</td><td colspan="1" rowspan="1"><p><strong><code>Environment</code></strong><strong> ➔ </strong><strong><code>DeploymentPipeline</code></strong><strong> ➔ </strong><strong><code>ReleaseBinding</code></strong>: 建立有向無環圖(DAG),清晰標示「同一個不可變製品」在 Dev ➔ Staging ➔ Prod 的流轉軌跡。</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>3. 網路與安全關聯<br></strong>(Policy Automation)</p>
+</td><td colspan="1" rowspan="1"><p>需要維運手寫繁複的 NetworkPolicy 與 Ingress</p>
+</td><td colspan="1" rowspan="1"><p><strong>意圖即安全</strong>: 只要宣告 <code>dependencies</code>,控制器自動關聯並產生 Data Plane 的 Envoy 路由與零信任 NetworkPolicy 白名單。</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p><strong>4. 遙測與除錯關聯<br></strong>(Contextual Telemetry)</p>
+</td><td colspan="1" rowspan="1"><p>拋錯時要去 Elasticsearch/Grafana 手動搜尋 namespace</p>
+</td><td colspan="1" rowspan="1"><p><strong>上下文直達</strong>: 在元件頁面點擊 LOGS / METRICS,直接關聯展示該服務的即時日誌與指標,無需跨系統查找。</p>
+</td></tr>
+</table>
+<p>簡言之:<strong>Argo CD 負責「無腦且精準地搬運」,而 OpenChoreo 負責「理解架構、賦予關聯、自動治理」！</strong></p>
+<h2 is-upgraded>實例對比：單用 Argo CD vs 加入 OpenChoreo 治理</h2>
+<p>為了讓這個分工具體有感,我們以真實企業情境「上線一個電商訂單微服務 (<code>order-api</code>)」為例: 此服務需要:</p>
+<ol type="1">
+<li>運行容器映像 <code>order-api:v1.2</code></li>
+<li>暴露 HTTP 8080 對外接收訂單請求</li>
+<li>依賴同專案的 <code>payment-service</code> (付款服務)</li>
+<li>注入環境變數 <code>LOG_LEVEL=info</code></li>
+<li>生產防護:健康檢查探針、資源限制、零信任 NetworkPolicy 白名單、Envoy 閘道路由</li>
+</ol>
+<h3 is-upgraded>1. Git 倉庫結構與檔案維護量對比</h3>
+<pre><code>【單用 Argo CD (純 K8s / Helm)】            【加入 OpenChoreo 治理】
+order-api-gitops/                          order-api-gitops/
+├── base/                                  └── apps/order-api/
+│   ├── deployment.yaml      (~85 行)          ├── component.yaml (~15 行)
+│   ├── service.yaml         (~25 行)          └── workload.yaml  (~30 行)
+│   ├── httproute.yaml       (~35 行)
+│   ├── networkpolicy.yaml   (~45 行)       總計: 2 個檔案、45 行簡潔業務宣告
+│   ├── hpa.yaml             (~30 行)       (開發者不必管底層 K8s 網路與探針)
+│   ├── serviceaccount.yaml  (~15 行)
+│   └── kustomization.yaml   (~20 行)
+└── overlays/ (dev, staging, prod)
+總計: 7+ 個檔案、250+ 行底層 YAML
+(開發者必須精通 K8s 全部細節)
+</code></pre>
+<h3 is-upgraded>2. 開發者在 Git 撰寫的 YAML 實例對比</h3>
+<h4 is-upgraded>A. 單用 Argo CD：開發者必須手寫全部底層細節 (片段)</h4>
+<p>開發者必須手動拼湊 Deployment、NetworkPolicy、HTTPRoute:</p>
+<pre><code language="language-yaml" class="language-yaml"># 單用 Argo CD: 開發者在 deployment.yaml 中必須自己搞懂探針與安全性
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-api
+  template:
+    metadata:
+      labels:
+        app: order-api
+    spec:
+      containers:
+      - name: app
+        image: company-registry.io/order-api:v1.2
+        ports:
+        - containerPort: 8080
+        livenessProbe:              # 漏寫探針，Pod 當掉 K8s 不會重啟
+          httpGet:
+            path: /healthz
+            port: 8080
+        resources:                  # 漏寫限制，可能吃垮整個節點
+          limits: { cpu: 500m, memory: 512Mi }
+          requests: { cpu: 100m, memory: 128Mi }
+        securityContext:            # 漏寫這段，容器可能以 root 高風險執行
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10001
+---
+# 還要手寫 40 行 NetworkPolicy 才能防止其他非相關 Pod 隨意連入
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: order-api-netpol
+spec:
+  podSelector: { matchLabels: { app: order-api } }
+  ingress:
+  - from:
+    - podSelector: { matchLabels: { app: gateway-envoy } }
+    - podSelector: { matchLabels: { app: payment-service } }
+    ports: [{ port: 8080, protocol: TCP }]
+</code></pre>
+<p><strong>痛點</strong>：全公司 50 個業務開發者都要複製貼上這些代碼。有人探針寫錯、有人忘了配 NetworkPolicy 造成資安漏洞、有人 label 拼錯導致 Service 404。</p>
+<h4 is-upgraded>B. 加入 OpenChoreo 治理：開發者只宣告業務意圖</h4>
+<p>在 OpenChoreo 模型下，開發者只需寫簡短的業務合約（<code>apps/order-api/</code>）：</p>
+<pre><code language="language-yaml" class="language-yaml"># 1. component.yaml: 宣告專案歸屬與採用的平台模板
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: order-api
+  namespace: default
+spec:
+  owner:
+    projectName: ecommerce
+  autoDeploy: true
+  componentType:
+    kind: ClusterComponentType
+    name: deployment/service
+---
+# 2. workload.yaml: 宣告容器、端點與微服務依賴
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: order-api-workload
+  namespace: default
+spec:
+  owner:
+    componentName: order-api
+    projectName: ecommerce
+  endpoints:
+    http:
+      type: HTTP
+      port: 8080
+      visibility: [external]
+  dependencies:
+    endpoints:
+      - component: payment-service  # 只要宣告依賴，平台自動打通安全網路與白名單！
+        name: http
+        visibility: project
+        envBindings:
+          url: PAYMENT_SERVICE_URL  # 自動將被依賴服務的位址注入為環境變數
+  container:
+    image: &#34;company-registry.io/order-api:v1.2&#34;
+    env:
+      - key: LOG_LEVEL
+        value: &#34;info&#34;
+</code></pre>
+<p><strong>成果</strong>：開發者只需寫 50 行業務相關宣告。底層的健康探針、Envoy 閘道父參照、零信任 NetworkPolicy 白名單與資源限制，<strong>全部由平台工程師定義的 </strong></p>
+<p><strong><code>ClusterComponentType</code></strong></p>
+<p><strong> 自動編譯補齊</strong>！（各 CRD 的完整規格手冊，詳見第 2 課 Step 4「開發者資源」與第 9 課微服務章節）。</p>
+<h3 is-upgraded>3. 真實企業治理場景實測</h3>
+<h4 is-upgraded>場景一：資安長下達新命令時 (最顯威力)</h4>
+<ul>
+<li><strong>要求</strong>：「為通過 ISO 27001 資安稽核，全公司所有 Pod 必須強制開啟 <code>readOnlyRootFilesystem: true</code> 與 <code>runAsNonRoot: true</code>！」</li>
+<li><strong>單用 Argo CD 的治理地獄</strong>： 維運團隊必須發起跨團隊大動員，向 50 個開發團隊、200 個微服務 repo 各提一個 PR 修改 <code>deployment.yaml</code>。若直接用 OPA/Kyverno 策略阻擋，隔天大量開發者的 GitOps 部署直接紅燈報錯，專案嚴重卡關。</li>
+<li><strong>加入 OpenChoreo 的優雅治理</strong>： 平台工程師在平台 repo 修改 <code>ClusterComponentType: deployment/service</code> 的 CEL 模板，Argo CD 同步進 Control Plane。<strong>全公司 200 個微服務在下一次調和或發布時，自動全部生成符合新規範的 Deployment</strong>！業務工程師的 Git repo <strong>完全不需要改動任何一行程式碼</strong>！</li>
+</ul>
+<h4 is-upgraded>場景二：服務異常排錯時</h4>
+<ul>
+<li><strong>單用 Argo CD</strong>： 開發者登入 Argo CD UI，面對的是由 Deployment、ReplicaSet、Pod、Service、EndpointSlice、NetworkPolicy 等組成的複雜「資源蜘蛛網」。找不到日誌，必須開 Terminal 跑 <code>kubectl logs</code>。</li>
+<li><strong>加入 OpenChoreo</strong>： 開發者登入 OpenChoreo Portal： <ul>
+<li>在 <strong>OVERVIEW</strong> 看微服務架構相依關係圖（看 <code>order-api</code> 與 <code>payment-service</code> 的連線）。</li>
+<li>在 <strong>LOGS</strong> 直接看即時聚合日誌串流。</li>
+<li>在 <strong>DEPLOY</strong> 一鍵點擊「View K8s Artifacts」，平台把底層自動渲染出來的 5 大 K8s 物件整齊列出。</li>
+</ul>
+</li>
+</ul>
 <h2 is-upgraded>為什麼 ReleaseBinding 不好放進 Git?</h2>
 <p>ReleaseBinding 的 <code>releaseName</code> 帶有內容雜湊(如 <code>hello-gitops-65f6b7d6b6</code>),是控制器<strong>在 Git 之外</strong>產生的,你無法事先寫在檔案裡。完整的 GitOps 流程需要工具先把這類檔案產生出來再提交,這也是 OpenChoreo 提供 <code>occ releasebinding generate</code> 的原因。本課聚焦在 Component 與 Workload。</p>
 <p>準備好實驗檔案吧。</p>
@@ -267,6 +476,14 @@ kubectl get component,workload -n default | grep hello
 </code></pre>
 <p>預期 <code>Synced</code> 與 <code>Healthy</code>,並看到由 Git 建立的 Component 和 Workload。</p>
 <p>Positive : 你沒有執行任何 <code>kubectl apply</code> 去建立 Component。它是 Argo CD 從 Git 讀出來、套用到叢集的。</p>
+<h2 is-upgraded>雙控制台對照：Argo CD 與 OpenChoreo 視覺化拓撲</h2>
+<p>當 Application 同步成功後，我們可以在兩個系統中看見各自的分工：</p>
+<p><strong>1. Argo CD 控制台（Git 同步層）</strong>： 在 Argo CD UI 中，可以看到 Application 呈現 <code>Synced</code> 與 <code>Healthy</code>。最值得注意的是：<strong>Argo CD 的資源樹只有 </strong><code>Component</code> <strong>與 </strong><code>Workload</code> <strong>兩個節點！</strong> 它完全不需要管理繁雜的底層 Kubernetes 資源：</p>
+<p class="image-container"><img alt="Argo CD 資源樹狀拓撲" src="img/846a94b3d84d4832.png"></p>
+<p><strong>2. OpenChoreo Portal 門戶（開發者體驗層）</strong>： 切換到 OpenChoreo 入口網站，開發者看到的則是直觀的元件全景與相依關係：</p>
+<p class="image-container"><img alt="OpenChoreo 元件總覽" src="img/aaf8d9e58d85f01.png"></p>
+<p>切換至 <strong>DEPLOY</strong> 分頁，OpenChoreo 控制器已自動將 Git 同步進來的版本完成 Development 環境部署（顯示綠色 Active），並提供了一鍵「View K8s Artifacts」與「Promote」晉升功能：</p>
+<p class="image-container"><img alt="OpenChoreo DEPLOY 部署流水線" src="img/306df81c498418ac.png"></p>
 
 
       </google-codelab-step>

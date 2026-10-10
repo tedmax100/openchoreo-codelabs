@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 430" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="430" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">Gateway API 流量入口轉發與端點可見度 (Visibility)</text>
+    <text class="c-sub" x="0" y="20">解析 HTTP 請求路徑剝除、HTTPRoute 規則比對以及 external vs project 存取控制</text>
+  </g>
+
+  <!-- Request URL Breakdown Bar -->
+  <g class="f-main" transform="translate(30, 56)">
+    <rect width="780" height="50" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-text" x="15" y="18" fill="#5f6368" font-size="10.5">請求網址範例解析：</text>
+    <text class="f-code" x="15" y="36" font-size="12">
+      <tspan fill="#1a73e8" font-weight="700">http://development-default.openchoreoapis.localhost</tspan><tspan fill="#d93025" font-weight="700">:19080</tspan><tspan fill="#e37400" font-weight="700">/my-greeter-http</tspan><tspan fill="#137333" font-weight="700">/greeter/greet</tspan>
+    </text>
+  </g>
+
+  <!-- Flow Steps -->
+  <!-- Step 1: External Client -->
+  <g class="f-main" transform="translate(30, 120)">
+    <rect width="160" height="200" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+    <text class="c-head" x="80" y="26" text-anchor="middle" fill="#174ea6">1. 外部客戶端</text>
+    <text class="c-text" x="80" y="44" text-anchor="middle" fill="#5f6368">瀏覽器 / curl</text>
+
+    <circle cx="80" cy="85" r="26" fill="#ffffff" stroke="#1a73e8"/>
+    <text class="c-head" x="80" y="92" text-anchor="middle" font-size="20">🌐</text>
+
+    <rect x="15" y="125" width="130" height="58" rx="4" fill="#ffffff" stroke="#dadce0"/>
+    <text class="c-text" x="80" y="145" text-anchor="middle" font-size="11" fill="#3c4043">發送 HTTP GET</text>
+    <text class="c-text" x="80" y="162" text-anchor="middle" font-size="10.5" fill="#174ea6">帶完整網址與路徑</text>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <line x1="190" y1="210" x2="225" y2="210" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <text class="f-main c-code" x="207" y="200" text-anchor="middle" fill="#d93025" font-size="10">Port 19080</text>
+
+  <!-- Step 2: Gateway API Entrance -->
+  <g class="f-main" transform="translate(225, 120)">
+    <rect width="180" height="200" rx="8" fill="#fef7e0" stroke="#e37400" stroke-width="1.5"/>
+    <text class="c-head" x="90" y="26" text-anchor="middle" fill="#b06000">2. Gateway 閘道</text>
+    <text class="c-text" x="90" y="44" text-anchor="middle" fill="#5f6368">叢集流量入口 (大樓大門)</text>
+
+    <g transform="translate(12, 60)">
+      <rect width="156" height="42" rx="4" fill="#ffffff" stroke="#e37400"/>
+      <text class="c-head" x="8" y="18" font-size="11" fill="#b06000">比對 Hostname</text>
+      <text class="c-text" x="8" y="32" font-size="9.5" fill="#5f6368">development-default...</text>
+
+      <rect y="50" width="156" height="74" rx="4" fill="#ffffff" stroke="#e37400"/>
+      <text class="c-head" x="8" y="68" font-size="11" fill="#b06000">比對 HTTPRoute</text>
+      <text class="c-text" x="8" y="84" font-size="10" fill="#3c4043">匹配前綴：<tspan class="f-code" fill="#e37400">/my-greeter-http</tspan></text>
+      <text class="c-text" x="8" y="100" font-size="10" fill="#137333" font-weight="600">✓ 剝除前綴轉發</text>
+      <text class="c-text" x="8" y="114" font-size="9.5" fill="#5f6368">保留 /greeter/greet</text>
+    </g>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <line x1="405" y1="210" x2="440" y2="210" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+  <text class="f-main c-code" x="422" y="200" text-anchor="middle" fill="#137333" font-size="10">內網轉發</text>
+
+  <!-- Step 3: ClusterIP Service -->
+  <g class="f-main" transform="translate(440, 120)">
+    <rect width="170" height="200" rx="8" fill="#f8f9fa" stroke="#dadce0" stroke-width="1.5"/>
+    <text class="c-head" x="85" y="26" text-anchor="middle" fill="#202124">3. K8s Service</text>
+    <text class="c-text" x="85" y="44" text-anchor="middle" fill="#5f6368">內部負載平衡 (各房間門)</text>
+
+    <g transform="translate(12, 60)">
+      <rect width="146" height="54" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="8" y="18" font-size="11" fill="#202124">my-greeter Service</text>
+      <text class="c-text" x="8" y="34" font-size="10" fill="#5f6368">ClusterIP 穩定虛擬 IP</text>
+      <text class="c-text" x="8" y="46" font-size="10" fill="#174ea6">Port 8080 映射</text>
+
+      <rect y="64" width="146" height="60" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="8" y="82" font-size="10" fill="#3c4043">依據 Label Selector</text>
+      <text class="c-text" x="8" y="96" font-size="10" fill="#3c4043">負載均衡分發至後端</text>
+      <text class="c-text" x="8" y="110" font-size="10" fill="#137333" font-weight="600">健康的 Pod 容器</text>
+    </g>
+  </g>
+
+  <!-- Arrow 3 -> 4 -->
+  <line x1="610" y1="210" x2="645" y2="210" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+  <!-- Step 4: Application Pod -->
+  <g class="f-main" transform="translate(645, 120)">
+    <rect width="165" height="200" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="2"/>
+    <text class="c-head" x="82" y="26" text-anchor="middle" fill="#0d652d">4. 應用程式 Pod</text>
+    <text class="c-text" x="82" y="44" text-anchor="middle" fill="#5f6368">greeter 容器</text>
+
+    <g transform="translate(10, 60)">
+      <rect width="145" height="114" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="8" y="20" font-size="11" fill="#137333">接收路徑：</text>
+      <text class="c-code" x="8" y="38" font-size="11" fill="#137333">/greeter/greet</text>
+      <text class="c-text" x="8" y="58" font-size="10.5" fill="#3c4043">應用監聽 8080 埠</text>
+      <text class="c-text" x="8" y="74" font-size="10.5" fill="#3c4043">處理後回傳 200 OK</text>
+      <rect x="8" y="84" width="129" height="22" rx="3" fill="#e6f4ea"/>
+      <text class="c-text" x="72" y="99" text-anchor="middle" font-size="10" fill="#137333" font-weight="600">"Hello from greeter!"</text>
+    </g>
+  </g>
+
+  <!-- Visibility Comparison Footer -->
+  <g class="f-main" transform="translate(30, 335)">
+    <rect width="780" height="75" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="20" y="22" fill="#202124" font-size="12.5">端點可見度 (Visibility) 策略對比：</text>
+
+    <g transform="translate(20, 32)">
+      <rect width="360" height="34" rx="4" fill="#e6f4ea" stroke="#137333"/>
+      <text class="c-head" x="10" y="22" font-size="11" fill="#137333">visibility: [external]</text>
+      <text class="c-text" x="145" y="22" font-size="10.5" fill="#3c4043">產生 Gateway HTTPRoute，對外網開放存取</text>
+
+      <rect x="380" width="360" height="34" rx="4" fill="#e8f0fe" stroke="#1a73e8"/>
+      <text class="c-head" x="390" y="22" font-size="11" fill="#174ea6">visibility: [project]</text>
+      <text class="c-text" x="520" y="22" font-size="10.5" fill="#3c4043">僅建立 ClusterIP，限同一 Project 內微服務互通</text>
+    </g>
+  </g>
+
+</svg>

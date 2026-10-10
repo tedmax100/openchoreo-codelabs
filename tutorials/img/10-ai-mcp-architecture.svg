@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">AI 代理人、Model Context Protocol (MCP) 與 OpenChoreo 整合全景圖</text>
+    <text class="c-sub" x="0" y="20">開放標準協定消除專屬膠水代碼，賦予 AI 助手安全操作控制平面與觀測維運資料的能力</text>
+  </g>
+
+  <!-- Left: AI Agent & User -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="220" height="340" rx="8" fill="#f3e8fd" stroke="#7b1fa2" stroke-width="1.5"/>
+    <rect x="12" y="12" width="135" height="22" rx="4" fill="#ffffff" stroke="#7b1fa2"/>
+    <text class="c-head" x="79" y="27" text-anchor="middle" fill="#6a1b9a" font-size="11">AI 助理與使用者</text>
+
+    <!-- User -->
+    <g transform="translate(15, 45)">
+      <rect width="190" height="65" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="12" y="22" font-size="11" fill="#202124">👤 使用者 (工程師)</text>
+      <text class="c-text" x="12" y="38" font-size="10" fill="#5f6368">自然語言提示輸入：</text>
+      <text class="c-text" x="12" y="52" font-size="9.5" fill="#7b1fa2">「請查詢 production 有無報錯」</text>
+    </g>
+
+    <!-- Down arrow -->
+    <line x1="110" y1="110" x2="110" y2="125" stroke="#7b1fa2" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+    <!-- AI Client Tools -->
+    <g transform="translate(15, 125)">
+      <rect width="190" height="135" rx="6" fill="#ffffff" stroke="#7b1fa2"/>
+      <text class="c-head" x="12" y="22" font-size="11" fill="#6a1b9a">🤖 AI 客戶端 / LLM</text>
+      <text class="c-text" x="12" y="38" font-size="10" fill="#5f6368">Claude Code • Cursor • 自訂 Agent</text>
+      <rect x="10" y="48" width="170" height="42" rx="4" fill="#f3e8fd"/>
+      <text class="c-head" x="16" y="66" font-size="10" fill="#6a1b9a">工具決策 (Tool Call)</text>
+      <text class="c-text" x="16" y="80" font-size="9.5" fill="#3c4043">選取 query_component_logs</text>
+
+      <text class="c-text" x="12" y="106" font-size="10" fill="#5f6368">內建 MCP 客戶端組裝</text>
+      <text class="c-code" x="12" y="122" font-size="9" fill="#174ea6">JSON-RPC 2.0 請求</text>
+    </g>
+
+    <rect x="15" y="270" width="190" height="50" rx="4" fill="#ffffff" stroke="#dadce0"/>
+    <text class="c-head" x="12" y="288" font-size="10.5" fill="#202124">認證方式 (OAuth 2.0)</text>
+    <text class="c-text" x="12" y="304" font-size="9.5" fill="#5f6368">• Auth Code + PKCE (人)</text>
+    <text class="c-text" x="12" y="316" font-size="9.5" fill="#5f6368">• Client Credentials (程式/腳本)</text>
+  </g>
+
+  <!-- Connectors from AI Client to MCP Servers -->
+  <g transform="translate(250, 180)">
+    <line x1="0" y1="0" x2="35" y2="0" stroke="#7b1fa2" stroke-width="2.5" marker-end="url(#arrow-purple)"/>
+    <text class="f-main c-code" x="17" y="-8" text-anchor="middle" font-size="9.5" fill="#7b1fa2">HTTP POST</text>
+    <text class="f-main c-text" x="17" y="16" text-anchor="middle" font-size="9" fill="#5f6368">Bearer Token</text>
+  </g>
+
+  <!-- Center: OpenChoreo MCP Servers -->
+  <g class="f-main" transform="translate(285, 60)">
+    <rect width="280" height="340" rx="8" fill="#f8f9fa" stroke="#1a73e8" stroke-width="2"/>
+    <rect x="12" y="12" width="200" height="22" rx="4" fill="#e8f0fe"/>
+    <text class="c-head" x="112" y="27" text-anchor="middle" fill="#174ea6" font-size="11">OpenChoreo 雙 MCP 伺服器</text>
+
+    <!-- Server 1: Control Plane MCP -->
+    <g transform="translate(15, 45)">
+      <rect width="250" height="135" rx="6" fill="#ffffff" stroke="#1a73e8"/>
+      <text class="c-head" x="12" y="22" font-size="11.5" fill="#174ea6">1. Control Plane MCP Server</text>
+      <text class="c-code" x="12" y="38" font-size="9.5" fill="#5f6368">/control-plane-mcp (Port 8443)</text>
+      <text class="c-text" x="12" y="56" font-size="10.5" fill="#3c4043">提供平台管理與資源操作工具：</text>
+      <g transform="translate(10, 62)">
+        <rect width="110" height="18" rx="2" fill="#e8f0fe"/>
+        <text class="c-code" x="6" y="13" font-size="8.5">list_projects</text>
+        <rect x="115" width="110" height="18" rx="2" fill="#e8f0fe"/>
+        <text class="c-code" x="121" y="13" font-size="8.5">get_component</text>
+        <rect y="22" width="110" height="18" rx="2" fill="#fce8e6"/>
+        <text class="c-code" x="6" y="35" font-size="8.5" fill="#c5221f">create_component</text>
+        <rect x="115" y="22" width="110" height="18" rx="2" fill="#fce8e6"/>
+        <text class="c-code" x="121" y="35" font-size="8.5" fill="#c5221f">delete_project</text>
+      </g>
+      <text class="c-text" x="12" y="124" font-size="9.5" fill="#5f6368">附帶完整 JSON Schema inputSchema</text>
+    </g>
+
+    <!-- Server 2: Observability MCP -->
+    <g transform="translate(15, 190)">
+      <rect width="250" height="135" rx="6" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="12" y="22" font-size="11.5" fill="#0d652d">2. Observability MCP Server</text>
+      <text class="c-code" x="12" y="38" font-size="9.5" fill="#5f6368">/observability-mcp (Port 8443)</text>
+      <text class="c-text" x="12" y="56" font-size="10.5" fill="#3c4043">提供可觀測性智慧查詢工具：</text>
+      <g transform="translate(10, 62)">
+        <rect width="110" height="18" rx="2" fill="#e6f4ea"/>
+        <text class="c-code" x="6" y="13" font-size="8.5">query_logs</text>
+        <rect x="115" width="110" height="18" rx="2" fill="#e6f4ea"/>
+        <text class="c-code" x="121" y="13" font-size="8.5">query_metrics</text>
+        <rect y="22" width="110" height="18" rx="2" fill="#e6f4ea"/>
+        <text class="c-code" x="6" y="35" font-size="8.5">query_events</text>
+        <rect x="115" y="22" width="110" height="18" rx="2" fill="#e6f4ea"/>
+        <text class="c-code" x="121" y="35" font-size="8.5">get_trace_tree</text>
+      </g>
+      <text class="c-text" x="12" y="124" font-size="9.5" fill="#137333">直連 Observer API 獲取即時維運數據</text>
+    </g>
+  </g>
+
+  <!-- Connectors from MCP to K8s Backend -->
+  <line x1="565" y1="180" x2="600" y2="180" stroke="#1a73e8" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
+
+  <!-- Right: Kubernetes Cluster Backend -->
+  <g class="f-main" transform="translate(600, 60)">
+    <rect width="210" height="340" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+    <text class="c-head" x="105" y="26" text-anchor="middle" fill="#174ea6">Kubernetes 叢集後端</text>
+    <text class="c-text" x="105" y="44" text-anchor="middle" font-size="11" fill="#5f6368">真正的資料與執行實體</text>
+
+    <g transform="translate(12, 60)">
+      <rect width="186" height="75" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="10" y="20" font-size="11" fill="#202124">OpenChoreo API</text>
+      <text class="c-text" x="10" y="36" font-size="10" fill="#5f6368">• 執行 RBAC 鑑權檢查</text>
+      <text class="c-text" x="10" y="52" font-size="10" fill="#5f6368">• 讀寫 CRD 資源到 etcd</text>
+      <text class="c-text" x="10" y="66" font-size="10" fill="#174ea6">• 觸發調和迴圈</text>
+
+      <rect y="90" width="186" height="75" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="10" y="110" font-size="11" fill="#202124">Observer 後端</text>
+      <text class="c-text" x="10" y="126" font-size="10" fill="#5f6368">• OpenSearch (Logs/Traces)</text>
+      <text class="c-text" x="10" y="142" font-size="10" fill="#5f6368">• VictoriaMetrics (Metrics)</text>
+      <text class="c-text" x="10" y="156" font-size="10" fill="#137333">• 依組織專案標籤過濾</text>
+
+      <!-- Audit log card -->
+      <rect y="180" width="186" height="75" rx="6" fill="#ffffff" stroke="#7b1fa2"/>
+      <text class="c-head" x="10" y="200" font-size="11" fill="#7b1fa2">審計軌跡 (Audit Log)</text>
+      <text class="c-text" x="10" y="216" font-size="10" fill="#3c4043">詳細記錄 AI 的每一次呼叫：</text>
+      <text class="c-text" x="10" y="232" font-size="9.5" fill="#5f6368">Who, When, What params</text>
+      <text class="c-text" x="10" y="246" font-size="9.5" fill="#7b1fa2">事後責任完全可追溯</text>
+    </g>
+  </g>
+
+</svg>

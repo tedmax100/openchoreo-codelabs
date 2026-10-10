@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">OpenChoreo 開發者資源階層與發佈模型</text>
+    <text class="c-sub" x="0" y="20">DDD 領域界限、宣告式階層與不可變 Release / ReleaseBinding 綁定關聯</text>
+  </g>
+
+  <!-- Left: Hierarchy -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="360" height="340" rx="8" fill="#f8f9fa" stroke="#dadce0" stroke-width="1.5"/>
+    <text class="c-head" x="20" y="26" fill="#202124">資源包含階層 (Resource Hierarchy)</text>
+
+    <!-- Org/Namespace -->
+    <g transform="translate(15, 42)">
+      <rect width="330" height="275" rx="6" fill="#ffffff" stroke="#1a73e8" stroke-width="1.5"/>
+      <text class="c-head" x="15" y="22" fill="#174ea6" font-size="12">Namespace (例如 default) • 頂層隔離單位</text>
+
+      <!-- Project -->
+      <g transform="translate(15, 34)">
+        <rect width="300" height="225" rx="6" fill="#e8f0fe" stroke="#1a73e8"/>
+        <text class="c-head" x="12" y="20" fill="#174ea6" font-size="12">Project (Bounded Context 領域邊界)</text>
+        <text class="c-text" x="12" y="34" font-size="10.5" fill="#5f6368">程式碼所有權、專屬網路隔離與安全政策邊界</text>
+
+        <!-- Component -->
+        <g transform="translate(12, 44)">
+          <rect width="276" height="155" rx="6" fill="#ffffff" stroke="#34a853" stroke-width="1.5"/>
+          <text class="c-head" x="12" y="20" fill="#137333" font-size="12">Component (可部署軟體單元)</text>
+          <text class="c-text" x="12" y="34" font-size="10.5" fill="#5f6368">例如 greeter 微服務、前端網站或背景工作</text>
+
+          <!-- Component properties -->
+          <g transform="translate(12, 44)">
+            <rect x="0" y="0" width="252" height="24" rx="3" fill="#e6f4ea"/>
+            <text class="c-text" x="8" y="16" font-size="11" fill="#137333">ComponentType: deployment/service (模板)</text>
+
+            <rect x="0" y="28" width="252" height="24" rx="3" fill="#fef7e0"/>
+            <text class="c-text" x="8" y="44" font-size="11" fill="#b06000">Traits: [pdb, hpa, storage] (可插拔附加能力)</text>
+
+            <!-- Workload -->
+            <rect x="0" y="56" width="252" height="42" rx="3" fill="#f3e8fd" stroke="#7b1fa2"/>
+            <text class="c-head" x="8" y="73" font-size="11" fill="#7b1fa2">Workload (執行期需求合約)</text>
+            <text class="c-text" x="8" y="88" font-size="10" fill="#5f6368">image: myapp:v1 • ports: [8080] • endpoints</text>
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- Center Arrow -->
+  <g class="f-main" transform="translate(400, 190)">
+    <line x1="5" y1="0" x2="35" y2="0" stroke="#1a73e8" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
+    <text class="c-text" x="20" y="-8" text-anchor="middle" fill="#174ea6" font-size="11">產生快照</text>
+  </g>
+
+  <!-- Right: Release & Binding Model -->
+  <g class="f-main" transform="translate(445, 60)">
+    <rect width="365" height="340" rx="8" fill="#f8f9fa" stroke="#dadce0" stroke-width="1.5"/>
+    <text class="c-head" x="20" y="26" fill="#202124">發佈模型 (Release &amp; Binding)</text>
+
+    <!-- ComponentRelease -->
+    <g transform="translate(15, 42)">
+      <rect width="335" height="95" rx="6" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+      <text class="c-head" x="12" y="22" fill="#174ea6" font-size="12">📦 ComponentRelease (不可變快照)</text>
+      <text class="c-text" x="12" y="38" font-size="11" fill="#5f6368">名稱尾碼帶內容雜湊：<tspan class="f-code" fill="#174ea6">greeter-65f6b7d6b6</tspan></text>
+      <text class="c-text" x="12" y="54" font-size="10.5" fill="#5f6368">• 凍結當時的 Workload、參數、模板定義</text>
+      <text class="c-text" x="12" y="70" font-size="10.5" fill="#137333" font-weight="600">一旦產生永遠不變，具備完整可重現與回滾能力</text>
+    </g>
+
+    <!-- Down Arrow to Environments -->
+    <line x1="182" y1="140" x2="182" y2="162" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+    <text class="c-text" x="245" y="154" fill="#174ea6" font-size="10.5">綁定至不同環境</text>
+
+    <!-- ReleaseBindings per Env -->
+    <g transform="translate(15, 168)">
+      <rect width="335" height="152" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="12" y="20" fill="#202124" font-size="12">ReleaseBinding (環境綁定與覆寫)</text>
+
+      <!-- dev -->
+      <g transform="translate(10, 28)">
+        <rect width="315" height="32" rx="4" fill="#e6f4ea" stroke="#137333"/>
+        <text class="c-head" x="8" y="20" font-size="11" fill="#137333">dev 環境</text>
+        <text class="c-text" x="75" y="20" font-size="10.5" fill="#3c4043">→ 指向 Release-1 • replicas: 1, debug: true</text>
+      </g>
+
+      <!-- staging -->
+      <g transform="translate(10, 66)">
+        <rect width="315" height="32" rx="4" fill="#fef7e0" stroke="#e37400"/>
+        <text class="c-head" x="8" y="20" font-size="11" fill="#e37400">staging 環境</text>
+        <text class="c-text" x="75" y="20" font-size="10.5" fill="#3c4043">→ 指向 Release-1 • replicas: 2, debug: false</text>
+      </g>
+
+      <!-- prod -->
+      <g transform="translate(10, 104)">
+        <rect width="315" height="32" rx="4" fill="#f3e8fd" stroke="#7b1fa2"/>
+        <text class="c-head" x="8" y="20" font-size="11" fill="#7b1fa2">prod 環境</text>
+        <text class="c-text" x="75" y="20" font-size="10.5" fill="#3c4043">→ 指向 Release-1 • replicas: 5, 高可用保護</text>
+      </g>
+    </g>
+  </g>
+
+</svg>

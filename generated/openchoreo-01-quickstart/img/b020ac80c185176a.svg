@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 430" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="430" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 28)">
+    <text class="c-title" x="0" y="0">Kubernetes 認知負荷 vs 內部開發者平台 (IDP) 黃金路徑</text>
+    <text class="c-sub" x="0" y="20">傳統直接面對原生 Kubernetes 與採用 OpenChoreo 平台工程的對比</text>
+  </g>
+
+  <!-- Left: Raw Kubernetes -->
+  <g class="f-main" transform="translate(30, 65)">
+    <rect width="360" height="340" rx="8" fill="#fce8e6" fill-opacity="0.3" stroke="#f5c2c7" stroke-width="1.5"/>
+    <rect width="360" height="36" rx="8" fill="#fce8e6" stroke="#f5c2c7" stroke-width="1.5"/>
+    <text class="c-head" x="180" y="23" text-anchor="middle" fill="#c5221f">❌ 傳統直接面對原生 Kubernetes</text>
+
+    <!-- Developer Icon Box -->
+    <rect x="20" y="55" width="320" height="42" rx="6" fill="#ffffff" stroke="#dadce0"/>
+    <text class="c-head" x="35" y="75" fill="#3c4043">後端 / 全端工程師</text>
+    <text class="c-text" x="35" y="90" fill="#70757a">只想讓撰寫好的微服務順暢安全上線</text>
+
+    <text class="c-text" x="180" y="115" text-anchor="middle" fill="#c5221f" font-weight="600">▼ 必須同時學習並維護多達 8+ 項底層資源 ▼</text>
+
+    <!-- Complex K8s items grid -->
+    <g transform="translate(20, 125)">
+      <rect x="0" y="0" width="150" height="34" rx="4" fill="#ffffff" stroke="#e0e0e0"/>
+      <text class="c-code" x="10" y="21">Pod / Deployment</text>
+
+      <rect x="170" y="0" width="150" height="34" rx="4" fill="#ffffff" stroke="#e0e0e0"/>
+      <text class="c-code" x="180" y="21">Service / Gateway</text>
+
+      <rect x="0" y="44" width="150" height="34" rx="4" fill="#ffffff" stroke="#e0e0e0"/>
+      <text class="c-code" x="10" y="65">ConfigMap / Secret</text>
+
+      <rect x="170" y="44" width="150" height="34" rx="4" fill="#ffffff" stroke="#e0e0e0"/>
+      <text class="c-code" x="180" y="65">HPA 自動擴縮</text>
+
+      <rect x="0" y="88" width="150" height="34" rx="4" fill="#ffffff" stroke="#e0e0e0"/>
+      <text class="c-code" x="10" y="109">RBAC 權限設定</text>
+
+      <rect x="170" y="88" width="150" height="34" rx="4" fill="#ffffff" stroke="#e0e0e0"/>
+      <text class="c-code" x="180" y="109">NetworkPolicy 隔離</text>
+
+      <rect x="0" y="132" width="150" height="34" rx="4" fill="#ffffff" stroke="#e0e0e0"/>
+      <text class="c-code" x="10" y="153">Multi-env YAML</text>
+
+      <rect x="170" y="132" width="150" height="34" rx="4" fill="#ffffff" stroke="#e0e0e0"/>
+      <text class="c-code" x="180" y="153">日誌/追蹤/指標工具</text>
+    </g>
+
+    <!-- Problem callout -->
+    <rect x="20" y="295" width="320" height="32" rx="4" fill="#fce8e6" stroke="#c5221f" stroke-dasharray="3,3"/>
+    <text class="c-text" x="180" y="315" text-anchor="middle" fill="#c5221f" font-weight="600">痛點：認知負荷巨大、重複造輪子、安全隱患高</text>
+  </g>
+
+  <!-- Right: OpenChoreo IDP Golden Path -->
+  <g class="f-main" transform="translate(420, 65)">
+    <rect width="390" height="340" rx="8" fill="#e6f4ea" fill-opacity="0.3" stroke="#a8dab5" stroke-width="1.5"/>
+    <rect width="390" height="36" rx="8" fill="#e6f4ea" stroke="#a8dab5" stroke-width="1.5"/>
+    <text class="c-head" x="195" y="23" text-anchor="middle" fill="#137333">✅ OpenChoreo 內部開發者平台 (IDP)</text>
+
+    <!-- Platform team prep -->
+    <rect x="20" y="55" width="350" height="52" rx="6" fill="#e8f0fe" stroke="#1a73e8"/>
+    <text class="c-head" x="35" y="75" fill="#174ea6">平台工程團隊 (技師角色)</text>
+    <text class="c-text" x="35" y="93" fill="#1a73e8">鋪設「黃金路徑 (Golden Path)」：標準化模板、護欄、安全合規</text>
+
+    <!-- Down arrow -->
+    <line x1="195" y1="107" x2="195" y2="128" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Developer self-service -->
+    <rect x="20" y="132" width="350" height="58" rx="6" fill="#ffffff" stroke="#dadce0"/>
+    <text class="c-head" x="35" y="153" fill="#137333">開發者自助服務 (駕駛角色)</text>
+    <text class="c-text" x="35" y="172" fill="#5f6368">Backstage 開發者入口網站 / <tspan class="f-code" fill="#174ea6">occ</tspan> 命令列工具</text>
+    <text class="c-text" x="35" y="186" fill="#137333" font-size="11">只宣告：「映像檔、埠號、端點對外與否」 (Workload)</text>
+
+    <!-- Down arrow -->
+    <line x1="195" y1="190" x2="195" y2="212" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- OpenChoreo Engine to K8s -->
+    <rect x="20" y="216" width="350" height="66" rx="6" fill="#f8f9fa" stroke="#34a853"/>
+    <text class="c-head" x="35" y="236" fill="#202124">底層 Kubernetes (不把 K8s 藏起來)</text>
+    <text class="c-text" x="35" y="254" fill="#5f6368">自動轉譯為標準 CRD、Deployment、Service、Gateway API</text>
+    <text class="c-text" x="35" y="270" fill="#137333" font-weight="600">開發者隨時可用 kubectl 檢視與除錯</text>
+
+    <!-- Benefit callout -->
+    <rect x="20" y="295" width="350" height="32" rx="4" fill="#e6f4ea" stroke="#137333"/>
+    <text class="c-text" x="195" y="315" text-anchor="middle" fill="#137333" font-weight="600">效益：降低 80% 認知負荷、專注商業邏輯、預設安全</text>
+  </g>
+
+</svg>

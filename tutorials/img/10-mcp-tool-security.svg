@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 400" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="400" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">MCP 工具呼叫循環與安全防護邊界 (Tool Call Loop &amp; Security Boundary)</text>
+    <text class="c-sub" x="0" y="20">AI 只能透過外部工具操作基礎設施，透過權限過濾、唯讀放行與人機協同 (HITL) 杜絕誤刪風險</text>
+  </g>
+
+  <!-- Flow Steps -->
+  <!-- Step 1: User Prompt -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="160" height="250" rx="8" fill="#f3e8fd" stroke="#7b1fa2" stroke-width="1.5"/>
+    <text class="c-head" x="80" y="26" text-anchor="middle" fill="#6a1b9a">1. 使用者提問</text>
+
+    <rect x="12" y="48" width="136" height="85" rx="4" fill="#ffffff"/>
+    <text class="c-text" x="10" y="20" font-size="10.5" fill="#5f6368" transform="translate(10, 45)">自然語言意圖：</text>
+    <text class="c-text" x="10" y="38" font-size="10" fill="#202124" font-weight="600" transform="translate(10, 45)">「線上購物車有</text>
+    <text class="c-text" x="10" y="52" font-size="10" fill="#202124" font-weight="600" transform="translate(10, 45)"> 500 錯誤嗎？請幫</text>
+    <text class="c-text" x="10" y="66" font-size="10" fill="#202124" font-weight="600" transform="translate(10, 45)"> 我重啟或刪除它」</text>
+
+    <circle cx="80" cy="180" r="24" fill="#ffffff" stroke="#7b1fa2"/>
+    <text class="c-head" x="80" y="186" text-anchor="middle" font-size="20">💬</text>
+  </g>
+
+  <!-- Arrow 1 -> 2 -->
+  <line x1="190" y1="185" x2="225" y2="185" stroke="#7b1fa2" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+  <!-- Step 2: LLM Reasoning -->
+  <g class="f-main" transform="translate(225, 60)">
+    <rect width="180" height="250" rx="8" fill="#ffffff" stroke="#dadce0" stroke-width="1.5"/>
+    <text class="c-head" x="90" y="26" text-anchor="middle" fill="#202124">2. AI 推理與決策</text>
+
+    <rect x="12" y="48" width="156" height="110" rx="4" fill="#f8f9fa"/>
+    <text class="c-text" x="8" y="20" font-size="10.5" fill="#5f6368" transform="translate(10, 45)">LLM 模型本身：</text>
+    <text class="c-text" x="8" y="36" font-size="10" fill="#3c4043" transform="translate(10, 45)">• 不具備執行權限</text>
+    <text class="c-text" x="8" y="52" font-size="10" fill="#3c4043" transform="translate(10, 45)">• 閱讀工具 inputSchema</text>
+    <text class="c-text" x="8" y="68" font-size="10" fill="#3c4043" transform="translate(10, 45)">• 組裝 JSON-RPC 參數</text>
+    <text class="c-code" x="8" y="90" font-size="9.5" fill="#7b1fa2" transform="translate(10, 45)">tools/call query_logs</text>
+
+    <rect x="12" y="170" width="156" height="65" rx="4" fill="#f3e8fd"/>
+    <text class="c-head" x="20" y="190" font-size="10" fill="#6a1b9a">發送給 MCP 伺服器</text>
+    <text class="c-text" x="20" y="206" font-size="9.5" fill="#5f6368">等待工具執行回傳結果</text>
+    <text class="c-text" x="20" y="220" font-size="9.5" fill="#5f6368">再組織自然語言答覆</text>
+  </g>
+
+  <!-- Arrow 2 -> 3 -->
+  <line x1="405" y1="185" x2="440" y2="185" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+  <!-- Step 3: Security Guardrails -->
+  <g class="f-main" transform="translate(440, 60)">
+    <rect width="210" height="250" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+    <text class="c-head" x="105" y="26" text-anchor="middle" fill="#174ea6">3. 安全防護閘道</text>
+
+    <!-- Guardrail checks -->
+    <g transform="translate(12, 45)">
+      <!-- 1. Token Check -->
+      <rect width="186" height="52" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="8" y="18" font-size="10.5" fill="#174ea6">① Token &amp; RBAC 驗證</text>
+      <text class="c-text" x="8" y="32" font-size="9.5" fill="#5f6368">驗證持有者身分與角色邊界</text>
+      <text class="c-text" x="8" y="44" font-size="9.5" fill="#137333">✓ 僅暴露已獲授權之工具清單</text>
+
+      <!-- 2. Read vs Write Split -->
+      <rect y="58" width="186" height="68" rx="4" fill="#ffffff" stroke="#e37400"/>
+      <text class="c-head" x="8" y="76" font-size="10.5" fill="#b06000">② 操作性質分流</text>
+      <text class="c-text" x="8" y="92" font-size="9.5" fill="#137333">• 唯讀工具 (查詢)：自動放行</text>
+      <text class="c-text" x="8" y="106" font-size="9.5" fill="#d93025">• 寫入/刪除：觸發防護</text>
+      <text class="c-text" x="8" y="118" font-size="9" fill="#b06000">  (不可直接無條件呼叫)</text>
+
+      <!-- 3. Audit Logging -->
+      <rect y="132" width="186" height="58" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="8" y="150" font-size="10.5" fill="#202124">③ 稽核日誌 (Audit)</text>
+      <text class="c-text" x="8" y="166" font-size="9.5" fill="#5f6368">寫入所有傳入參數與時間戳</text>
+      <text class="c-text" x="8" y="180" font-size="9" fill="#174ea6">符合合規與事後追蹤審查</text>
+    </g>
+  </g>
+
+  <!-- Connectors from Guardrails to Action and Human Confirmation -->
+  <line x1="650" y1="130" x2="685" y2="130" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+  <line x1="650" y1="230" x2="685" y2="230" stroke="#d93025" stroke-width="2" marker-end="url(#arrow-red)"/>
+
+  <!-- Step 4: Results (Read vs Destructive) -->
+  <g class="f-main" transform="translate(685, 60)">
+    <rect width="125" height="250" rx="8" fill="#f8f9fa" stroke="#dadce0" stroke-width="1.5"/>
+
+    <!-- Read Outcome -->
+    <g transform="translate(10, 20)">
+      <rect width="105" height="100" rx="6" fill="#e6f4ea" stroke="#137333"/>
+      <text class="c-head" x="52" y="22" text-anchor="middle" font-size="10.5" fill="#137333">唯讀查詢</text>
+      <text class="c-text" x="52" y="40" text-anchor="middle" font-size="9" fill="#3c4043">query_logs</text>
+      <text class="c-text" x="52" y="54" text-anchor="middle" font-size="9" fill="#3c4043">query_metrics</text>
+      <rect x="8" y="65" width="89" height="24" rx="3" fill="#ffffff"/>
+      <text class="c-text" x="52" y="80" text-anchor="middle" font-size="9" fill="#137333" font-weight="600">自動執行回傳</text>
+    </g>
+
+    <!-- Destructive Outcome -->
+    <g transform="translate(10, 135)">
+      <rect width="105" height="100" rx="6" fill="#fce8e6" stroke="#c5221f"/>
+      <text class="c-head" x="52" y="20" text-anchor="middle" font-size="10" fill="#c5221f">破壞性操作</text>
+      <text class="c-text" x="52" y="34" text-anchor="middle" font-size="9" fill="#3c4043">delete_project</text>
+      <rect x="6" y="44" width="93" height="46" rx="3" fill="#ffffff" stroke="#c5221f"/>
+      <text class="c-head" x="52" y="60" text-anchor="middle" font-size="9" fill="#c5221f">人機協同</text>
+      <text class="c-text" x="52" y="74" text-anchor="middle" font-size="8.5" fill="#3c4043">(HITL)</text>
+      <text class="c-text" x="52" y="86" text-anchor="middle" font-size="8.5" fill="#c5221f" font-weight="700">需工程師確認</text>
+    </g>
+  </g>
+
+  <!-- Summary Policy Footer -->
+  <g class="f-main" transform="translate(30, 325)">
+    <rect width="780" height="55" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="15" y="22" fill="#202124" font-size="12">🛡️ OpenChoreo 安全實務準則：</text>
+    <text class="c-text" x="15" y="40" fill="#3c4043" font-size="11">
+      嚴禁直接給予 AI 叢集高權限 cluster-admin！優先建立專用 RBAC 服務帳號、先從唯讀工具開始，寫入與刪除操作必須保留審計軌跡與人工確認把關。
+    </text>
+  </g>
+
+</svg>

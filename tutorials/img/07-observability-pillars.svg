@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 400" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="400" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">可觀測性三大支柱與事件 (Metrics, Traces, Logs, Events)</text>
+    <text class="c-sub" x="0" y="20">四大面向彼此互補，透過 OpenChoreo 統一標籤體系實現跨維度關聯分析</text>
+  </g>
+
+  <!-- 4 Pillars Grid -->
+  <g class="f-main" transform="translate(30, 60)">
+    <!-- Pillar 1: Metrics -->
+    <g transform="translate(0, 0)">
+      <rect width="185" height="235" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+      <rect x="12" y="12" width="161" height="26" rx="4" fill="#ffffff" stroke="#1a73e8"/>
+      <text class="c-head" x="92" y="29" text-anchor="middle" fill="#174ea6" font-size="12">📊 指標 (Metrics)</text>
+
+      <g transform="translate(12, 48)">
+        <text class="c-head" x="0" y="16" font-size="11" fill="#174ea6">回答問題：</text>
+        <text class="c-text" x="0" y="32" font-size="11" fill="#202124" font-weight="600">「整體趨勢如何？」</text>
+        <text class="c-text" x="0" y="48" font-size="10.5" fill="#5f6368">隨時間變化的聚合數值</text>
+
+        <rect y="60" width="161" height="74" rx="4" fill="#ffffff" stroke="#dadce0"/>
+        <text class="c-text" x="8" y="78" font-size="10.5" fill="#3c4043">• CPU / 記憶體使用量</text>
+        <text class="c-text" x="8" y="96" font-size="10.5" fill="#3c4043">• 每秒請求數 (QPS)</text>
+        <text class="c-text" x="8" y="114" font-size="10.5" fill="#3c4043">• 錯誤率百分比 (Error%)</text>
+        <text class="c-text" x="8" y="128" font-size="10" fill="#174ea6">• Prometheus / VictoriaMetrics</text>
+
+        <rect y="142" width="161" height="24" rx="3" fill="#e8f0fe"/>
+        <text class="c-text" x="80" y="158" text-anchor="middle" font-size="10" fill="#174ea6">👉 告訴你「系統有問題」</text>
+      </g>
+    </g>
+
+    <!-- Pillar 2: Traces -->
+    <g transform="translate(198, 0)">
+      <rect width="185" height="235" rx="8" fill="#fef7e0" stroke="#e37400" stroke-width="1.5"/>
+      <rect x="12" y="12" width="161" height="26" rx="4" fill="#ffffff" stroke="#e37400"/>
+      <text class="c-head" x="92" y="29" text-anchor="middle" fill="#b06000" font-size="12">🔍 追蹤 (Traces)</text>
+
+      <g transform="translate(12, 48)">
+        <text class="c-head" x="0" y="16" font-size="11" fill="#b06000">回答問題：</text>
+        <text class="c-text" x="0" y="32" font-size="11" fill="#202124" font-weight="600">「這個請求慢在哪？」</text>
+        <text class="c-text" x="0" y="48" font-size="10.5" fill="#5f6368">單一請求跨服務的調用樹</text>
+
+        <rect y="60" width="161" height="74" rx="4" fill="#ffffff" stroke="#dadce0"/>
+        <text class="c-text" x="8" y="78" font-size="10.5" fill="#3c4043">• 唯一識別碼 traceId</text>
+        <text class="c-text" x="8" y="96" font-size="10.5" fill="#3c4043">• 各服務呼叫段 spanId</text>
+        <text class="c-text" x="8" y="114" font-size="10.5" fill="#3c4043">• 跨網路頭部傳遞 (Propag)</text>
+        <text class="c-text" x="8" y="128" font-size="10" fill="#b06000">• OpenTelemetry / Jaeger</text>
+
+        <rect y="142" width="161" height="24" rx="3" fill="#fef7e0"/>
+        <text class="c-text" x="80" y="158" text-anchor="middle" font-size="10" fill="#b06000">👉 告訴你「問題在哪個服務」</text>
+      </g>
+    </g>
+
+    <!-- Pillar 3: Logs -->
+    <g transform="translate(396, 0)">
+      <rect width="185" height="235" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+      <rect x="12" y="12" width="161" height="26" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="92" y="29" text-anchor="middle" fill="#0d652d" font-size="12">📝 日誌 (Logs)</text>
+
+      <g transform="translate(12, 48)">
+        <text class="c-head" x="0" y="16" font-size="11" fill="#0d652d">回答問題：</text>
+        <text class="c-text" x="0" y="32" font-size="11" fill="#202124" font-weight="600">「具體發生了什麼？」</text>
+        <text class="c-text" x="0" y="48" font-size="10.5" fill="#5f6368">帶時間戳的詳細文字輸出</text>
+
+        <rect y="60" width="161" height="74" rx="4" fill="#ffffff" stroke="#dadce0"/>
+        <text class="c-text" x="8" y="78" font-size="10.5" fill="#3c4043">• 程式崩潰 Exception 追蹤</text>
+        <text class="c-text" x="8" y="96" font-size="10.5" fill="#3c4043">• 資料庫連線逾時紀錄</text>
+        <text class="c-text" x="8" y="114" font-size="10.5" fill="#3c4043">• stdout/stderr 容器日誌</text>
+        <text class="c-text" x="8" y="128" font-size="10" fill="#137333">• Fluent Bit / OpenSearch</text>
+
+        <rect y="142" width="161" height="24" rx="3" fill="#e6f4ea"/>
+        <text class="c-text" x="80" y="158" text-anchor="middle" font-size="10" fill="#137333">👉 告訴你「為什麼會出錯」</text>
+      </g>
+    </g>
+
+    <!-- Pillar 4: Events -->
+    <g transform="translate(594, 0)">
+      <rect width="185" height="235" rx="8" fill="#f3e8fd" stroke="#7b1fa2" stroke-width="1.5"/>
+      <rect x="12" y="12" width="161" height="26" rx="4" fill="#ffffff" stroke="#7b1fa2"/>
+      <text class="c-head" x="92" y="29" text-anchor="middle" fill="#6a1b9a" font-size="12">⚡ 事件 (Events)</text>
+
+      <g transform="translate(12, 48)">
+        <text class="c-head" x="0" y="16" font-size="11" fill="#6a1b9a">回答問題：</text>
+        <text class="c-text" x="0" y="32" font-size="11" fill="#202124" font-weight="600">「叢集做了什麼？」</text>
+        <text class="c-text" x="0" y="48" font-size="10.5" fill="#5f6368">Kubernetes 狀態生命週期</text>
+
+        <rect y="60" width="161" height="74" rx="4" fill="#ffffff" stroke="#dadce0"/>
+        <text class="c-text" x="8" y="78" font-size="10.5" fill="#3c4043">• Pod 排程排定 (Scheduled)</text>
+        <text class="c-text" x="8" y="96" font-size="10.5" fill="#3c4043">• 映像拉取失敗 (PullBackOff)</text>
+        <text class="c-text" x="8" y="114" font-size="10.5" fill="#3c4043">• 探針健康檢查失敗警告</text>
+        <text class="c-text" x="8" y="128" font-size="10" fill="#7b1fa2">• K8s Event Exporter</text>
+
+        <rect y="142" width="161" height="24" rx="3" fill="#f3e8fd"/>
+        <text class="c-text" x="80" y="158" text-anchor="middle" font-size="10" fill="#7b1fa2">👉 告訴你「基礎設施異動」</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Correlation Bar: Unified Labels -->
+  <g class="f-main" transform="translate(30, 310)">
+    <rect width="780" height="70" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="15" y="24" fill="#202124" font-size="12.5">🔗 穿透四大支柱的核心骨幹：OpenChoreo 平台級統一標籤 (Labels)</text>
+    <text class="c-text" x="15" y="44" fill="#3c4043" font-size="11">
+      收集管線自動為每一筆資料附加：<tspan class="f-code" fill="#174ea6">component: greeter</tspan> • <tspan class="f-code" fill="#137333">project: default</tspan> • <tspan class="f-code" fill="#e37400">environment: development</tspan>
+    </text>
+    <text class="c-text" x="15" y="60" font-size="10.5" fill="#5f6368">
+      讓維運人員可直接以「商業元件」維度一站式搜尋，無需在動態變換的 Pod 隨機名稱中盲目撈針！
+    </text>
+  </g>
+
+</svg>

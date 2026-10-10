@@ -58,12 +58,7 @@ Workload 只描述**需求**,不描述 Kubernetes 怎麼滿足。同一份 Workl
 
 ### 平台怎麼把它變成真正的資源
 
-```
-Workload(你寫的需求)  ┐
-Component 的參數       ├──▶ ComponentType(平台寫的模板) ──▶ Deployment
-環境設定(ReleaseBinding)┘                                   Service
-                                                            HTTPRoute …
-```
+![Workload 到 Kubernetes 資源轉換管線](img/03-workload-to-k8s.svg)
 
 **ComponentType 像是一個「食譜」**:你提供食材(映像、埠、參數),食譜決定怎麼烹調(產生哪些資源、用什麼預設值)。所以你寫 30 行,平台能產生上百行的 Kubernetes 設定。這就是第 8 課要自己動手寫的東西。
 
@@ -75,6 +70,8 @@ Component 的參數       ├──▶ ComponentType(平台寫的模板) ──�
 |---|---|
 | **Gateway** | 流量入口(像大樓大門),由平台管理 |
 | **HTTPRoute** | 路由規則:「某個主機名稱與路徑,轉到哪個 Service」 |
+
+![Gateway API 流量轉發與端點可見度](img/03-gateway-traffic-flow.svg)
 
 所以呼叫網址 `http://development-default.openchoreoapis.localhost:19080/my-greeter-http/greeter/greet` 可以拆成:
 
@@ -96,6 +93,7 @@ Workload 的每個端點都要宣告誰看得到它:
 | `project`(第 9 課實測) | 只有同一個 Project 內的元件能連 |
 
 **預設不對外**是比較安全的設計,你必須明確寫出 `external` 才會產生對外路由。
+
 
 ### `autoDeploy` 的意思
 
@@ -256,6 +254,123 @@ kubectl get deployment,svc,httproute -A -l openchoreo.dev/component=my-greeter
 
 這些資源位於類似 `dp-default-default-development-*` 的 namespace,而不是 `default`。
 
+### 深度解析:Data Plane 的底層架構與運作機制
+
+常有人疑惑：「Data Plane 是儲存資料的資料庫嗎？」答案是：**不是！**
+在網路與 Kubernetes 語境中,「Data」指的是「使用者的業務數據封包(Payload Data)」。Data Plane 實質上是**「API 智慧引流閘道 + 業務容器執行期」**的集合體。它透過 Envoy 閘道知道如何將外部請求路徑精準路由至對應服務,並真正承載所有微服務 Pod 的運算執行。
+
+在底層架構上,OpenChoreo 採用了**雙層命名空間(Two-Tier Namespaces)**與**反向代理閘道**架構:
+
+#### 1. 平台中樞命名空間: `openchoreo-data-plane`
+
+查看 Data Plane 基礎設施元件:
+
+```bash
+kubectl get pods,svc -n openchoreo-data-plane
+```
+
+你會看到三大關鍵守護組件:
+
+| 元件名稱 | 類型 | 角色與底層機制 |
+|---|---|---|
+| **`gateway-default`** | Envoy Proxy (LoadBalancer) | **外部流量總閘門**。監聽外部 `19080` (HTTP) 與 `19443` (HTTPS) 埠號,根據 Gateway API 的 `HTTPRoute` 規則將外部請求轉發給後端微服務。 |
+| **`cluster-agent-dataplane`** | 叢集通訊代理 (Agent) | **跨平面通訊橋樑**。透過 gRPC + mTLS 主動向 Control Plane 保持長連線,接收已渲染的部署指令,並向控制平面回報容器健康狀態。 |
+| **`openchoreo-remote-agent-router`** | 路由中繼 (Router) | 在多叢集環境中負責遠端資料平面的指令路由與安全通道轉發。 |
+
+#### 2. 業務執行隔離命名空間: `dp-<namespace>-<project>-<environment>-<hash>`
+
+開發者在 Control Plane 的 `default` 命名空間宣告 Component,但**真正的業務 Pod 絕不會跑在 Control Plane**。平台會自動開闢隔離命名空間:
+
+```bash
+kubectl get all,httproute,networkpolicy -n dp-default-default-development-f8e58905
+```
+
+當一個 Component 部署完成,Data Plane 會自動生成五大協同工件:
+
+1. **`Deployment` / `Pod`**: 運行使用者的業務容器(如 Go Greeter)。
+2. **`Service`**: 提供叢集內部穩定的虛擬 IP 與 CoreDNS 名稱(如 `my-greeter.dp-...svc.cluster.local:9090`)。
+3. **`HTTPRoute` (Gateway API)**: 宣告將 Envoy 閘道網址(`development-default.openchoreoapis.localhost:19080/my-greeter-http`)綁定至該 Service。
+4. **`NetworkPolicy` (零信任隔離)**: 預設 Default Deny,僅允許 Envoy 閘道與同專案宣告依賴的微服務進入,防止惡意橫向攻擊。
+5. **`ConfigMap` / `Secret`**: 注入由平台解析的環境變數與安全憑證。
+
+#### Data Plane 流量轉發與控制架構
+
+```
+[外部使用者 / 瀏覽器] ─▶ (HTTP: 19080)
+        │
+        ▼
+[🚪 gateway-default (Envoy Proxy)]  ◀── (配置 HTTPRoute) ── [cluster-agent-dataplane]
+        │                                                               ▲
+        │ (轉發路徑: /my-greeter-http)                                  │ (mTLS 接收指令)
+        ▼                                                               │
+┌─ Data Plane 隔離命名空間 (dp-default-default-development-*) ───────────┴──────────┐
+│                                                                                  │
+│   🛡️ NetworkPolicy (核心層過濾非授權流量)                                          │
+│         │                                                                        │
+│         ▼                                                                        │
+│   [Service: my-greeter (ClusterIP: 9090)]                                        │
+│         │                                                                        │
+│         ▼                                                                        │
+│   [Pod: my-greeter (Go Container)] ─▶ Fluent-bit 抓取日誌送 Observability Plane   │
+│                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3. Data Plane 的宣告式合約心臟：`RenderedRelease`
+
+Control Plane 是如何將抽象的 Component 與 ReleaseBinding 變成 Data Plane 上的真實 Pod 與 Service？關鍵在於 **`RenderedRelease`**（渲染後的發布合約）：
+
+```bash
+kubectl get renderedrelease -n default
+```
+
+你會看到例如 `greeting-service-development` 或 `react-starter-development`。用 `describe` 或 `yaml` 觀察它：
+
+```bash
+kubectl get renderedrelease greeting-service-development -n default -o yaml
+```
+
+這個 CRD 揭示了跨平面的三大底層機制：
+
+1. **`spec.targetPlane: dataplane`**：明確指示此資源集合由 Data Plane 負責承載。
+2. **`spec.resources[]`**：控制器編譯後的完整 Kubernetes 原生清單（包含目標命名空間 `dp-default-default-development-*`、Envoy 閘道父參照 `gateway-default`、以及容器鏡像位址與連接埠）。
+3. **`status.resources[]` 與健康回報**：遠端的 `cluster-agent-dataplane` 套用工件後，會主動探測資源狀態（如 Deployment 的 `readyReplicas`、HTTPRoute 的 `Accepted` 條件），並將 `healthStatus: Healthy` 即時回報寫入此 CRD。
+
+Positive
+: 在 Backstage 介面點擊「View K8s Artifacts」所看到的五大工件樹狀圖，底層就是 Experience Plane 直接讀取並可視化這個 RenderedRelease 物件！
+
+### 在 OpenChoreo 門戶中探索剛部署的服務
+
+在 Backstage 入口網站中，我們可以直接看到剛部署的 `my-greeter` 呈現於專案與元件管理中：
+
+**1. Project 專案總覽**：已同時列出 `my-greeter` 與 `react-starter`，Development 環境顯示綠色打勾表示健康運作：
+
+![Project 總覽與元件清單](img/03-project-with-greeter.png)
+
+**2. Component 元件概況**：點進 `my-greeter`，可檢視 Runtime Health（綠色 Healthy）、類型（`deployment/service`）與右下角實體關係圖：
+
+![Component 總覽頁面](img/03-greeter-overview.png)
+
+**3. DEPLOY 部署流水線**：展示 `my-greeter` 剛完成 Development 部署，右側側邊欄提供版本雜湊、對外端點與 Promote 晉升按鈕：
+
+![多環境部署管線與狀態](img/03-greeter-deploy-pipeline.png)
+
+**4. 檢視生成的 Kubernetes 工件（View K8s Artifacts）**：點擊右側的「View K8s Artifacts」按鈕，可直接看見平台如何把 ReleaseBinding 自動渲染成 5 大 Kubernetes 原生資源（NetworkPolicy、Service、HTTPRoute、Deployment、ConfigMap）：
+
+![Kubernetes 工件渲染拓撲](img/03-greeter-k8s-artifacts.png)
+
+**5. 容器即時日誌（LOGS）**：切換至 LOGS 分頁，能看到 Fluent-bit 聚合抓取的服務啟動紀錄（`Starting HTTP Greeter on port 9090`）：
+
+![即時日誌檢視](img/03-greeter-logs.png)
+
+**6. 原生 CRD 宣告式定義（DEFINITION）**：在 DEFINITION 分頁中，可直接檢視與複製 Kubernetes Component CRD YAML：
+
+![Component 宣告式 CRD 定義](img/03-greeter-definition.png)
+
+**7. 專案架構相依圖（DIAGRAM）**：回到專案切換至 DIAGRAM 分頁，可一覽整個命名空間與所有微服務元件的拓撲圖：
+
+![專案元件相依架構圖](img/03-project-diagram.png)
+
 Positive
 : 你只寫了約 30 行 YAML,平台根據 `deployment/service` 這個 ComponentType 幫你生出 Deployment、Service 與 HTTPRoute。
 
@@ -268,12 +383,24 @@ Duration: 3
 http://{environment}-{namespace}.{gateway-host}/{endpoint-name}/{path}
 ```
 
-本機 Dev Container 的閘道在 19080:
+### 從 OpenChoreo 網頁端取得端點網址
+
+在元件的 DEPLOY 分頁右側面板中，點擊 ENDPOINTS 下方的 **View All**，門戶會彈出端點對話框，提供對外閘道網址（External）與叢集內部 DNS 服務網址（Project），並附有一鍵複製按鈕：
+
+![OpenChoreo 端點彈窗](img/03-greeter-endpoints-modal.png)
+
+### 透過瀏覽器或 curl 呼叫
+
+複製 External 端點網址後加上 `/greeter/greet`，本機 Dev Container 的閘道在 19080:
 
 ```bash
 curl http://development-default.openchoreoapis.localhost:19080/my-greeter-http/greeter/greet
 curl "http://development-default.openchoreoapis.localhost:19080/my-greeter-http/greeter/greet?name=OpenChoreo"
 ```
+
+你也可以直接在瀏覽器網址列貼上 `http://development-default.openchoreoapis.localhost:19080/my-greeter-http/greeter/greet?name=OpenChoreo`，瀏覽器會直接收到服務回應：
+
+![瀏覽器直接呼叫服務結果](img/03-browser-call-greeter.png)
 
 預期輸出:
 
@@ -311,8 +438,40 @@ kubectl get releasebinding my-greeter-development -n default -o yaml
 1. 是否多出一個新的 ComponentRelease?
 2. ReleaseBinding 指向的 Release 是否更新(因為 `autoDeploy: true`)?
 
+### 從網頁端觀察新 Release 的即時更新
+
+重新整理 OpenChoreo 門戶，你可以直接在網頁上觀察到不可變製品的自動更新：
+
+**1. DEPLOY 分頁中的 Release 雜湊自動推進**：Release 欄位自動跳至新版本（例如 `my-greeter-7d65b4b7dc`），DEPLOYED 時間重設為剛剛，右側 Promote 按鈕維持可用：
+
+![新 Release 部署狀態更新](img/03-greeter-new-release-deploy.png)
+
+**2. DEFINITION 分頁中的 CRD 狀態同步**：Component 的狀態區塊（`.status.latestRelease`）同步更新為新的 releaseHash，證明平台控制器在 Kubernetes 背景完成調和：
+
+![新 Release CRD 宣告式定義同步](img/03-greeter-new-release-definition.png)
+
 ## 清理
-Duration: 1
+Duration: 2
+
+除了使用 `kubectl` 指令之外，OpenChoreo 的網頁介面也提供了兩種不同層級的清理方式：
+
+### 方式 1：環境下線（Undeploy，不刪除元件）
+
+如果你只是想暫時釋放資源，但未來還需要該元件，可以在元件的 **DEPLOY** 分頁選取該環境（如 Development），點擊右側面板 ACTIONS 中的 **`Undeploy`** 按鈕：
+
+![環境下線 Undeploy 成功](/home/nathan/Project/OpenChoreo_demo/codelabs/tutorials/img/03-cleanup-undeploy-modal.png)
+
+* **效果**：OpenChoreo 會將 `ReleaseBinding` 的狀態轉為 `Undeployed`，並將 Data Plane 中的 Pod 副本縮減至 0、釋放 CPU/Memory 資源，但保留元件定義與歷史版本。未來點擊 **`Redeploy`** 即可隨時恢復。
+
+### 方式 2：完整刪除元件（Delete Component）
+
+若要徹底移除元件及其所有相關資源，可在 **Project 總覽（OVERVIEW）** 頁面的 Project Contents 列表中，點擊該元件右側的 **垃圾桶圖示 🗑️**：
+
+![從介面刪除元件確認視窗](/home/nathan/Project/OpenChoreo_demo/codelabs/tutorials/img/03-cleanup-delete-component-modal.png)
+
+* **效果**：點擊紅色 **`Delete`** 後，OpenChoreo 控制器會執行級聯刪除（Cascade Delete），自動將 Kubernetes 內的 Component、Workload、所有 ComponentRelease、ReleaseBinding，以及工作節點上的 Deployment、Service、HTTPRoute 與 ConfigMap 一併徹底清除。
+
+### 方式 3：使用命令列刪除
 
 ```bash
 kubectl delete -f my-greeter.yaml

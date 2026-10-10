@@ -112,6 +112,7 @@
 </td></tr>
 </table>
 <p>本課你會看到的四個步驟(checkout、build、publish、generate-workload),就是 Argo 的四個步驟,每一步一個 Pod。</p>
+<p class="image-container"><img alt="Workflow Plane 4 步驟原始碼建置管線" src="img/556dd6f338154b13.svg"></p>
 <h2 is-upgraded>模板與執行:Workflow 與 WorkflowRun</h2>
 <p>如果熟悉程式設計,可以這樣理解:</p>
 <table>
@@ -141,35 +142,73 @@
 </table>
 <h2 is-upgraded>「建置一次,到處部署」</h2>
 <p>最重要的原則:<strong>同一個映像</strong>應該一路從 development 走到 production,而不是每個環境重建一次。因為重建可能得到不同的結果。這個原則是第 5 課的基礎。</p>
+<p class="image-container"><img alt="「建置一次，到處部署」原則" src="img/2bb3b108b09c8e11.svg"></p>
 <p>準備好了就開始安裝 Workflow Plane。</p>
 
 
       </google-codelab-step>
     
-      <google-codelab-step label="認識 Workflow Plane" duration="4">
+      <google-codelab-step label="認識 Workflow Plane" duration="6">
         <p>Workflow Plane 是 OpenChoreo 專門跑「流程」的地方,負責 CI 建置、測試與平台定義的任務。它底層使用 <strong>Argo Workflows</strong>,並搭配一個本機用的 <strong>container registry</strong>。</p>
+<h2 is-upgraded>1. 核心 CRD 與五層調和模型</h2>
+<p>在架構上,Workflow Plane 貫穿了從基礎設施註冊到不可變製品產出的五個抽象層次:</p>
 <table>
-<tr><td colspan="1" rowspan="1"><p>元件</p>
-</td><td colspan="1" rowspan="1"><p>角色</p>
+<tr><td colspan="1" rowspan="1"><p>層次</p>
+</td><td colspan="1" rowspan="1"><p>核心 CRD / 組件</p>
+</td><td colspan="1" rowspan="1"><p>所在平面</p>
+</td><td colspan="1" rowspan="1"><p>職責與運作內容</p>
 </td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>ClusterWorkflow</strong>(控制平面)</p>
-</td><td colspan="1" rowspan="1"><p>開發者看到的「流程模板」,定義參數 schema 與要產生的 Argo Workflow</p>
+<tr><td colspan="1" rowspan="1"><p><strong>1. 基礎設施層</strong></p>
+</td><td colspan="1" rowspan="1"><p><strong><code>ClusterWorkflowPlane</code></strong></p>
+</td><td colspan="1" rowspan="1"><p>Control Plane</p>
+</td><td colspan="1" rowspan="1"><p>向控制平面宣告工作流叢集、建立 <code>cluster-agent</code> mTLS 安全連線與綁定 SecretStore。</p>
 </td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>WorkflowRun</strong>(控制平面)</p>
-</td><td colspan="1" rowspan="1"><p>一次實際執行,帶入參數</p>
+<tr><td colspan="1" rowspan="1"><p><strong>2. 流程模板層</strong></p>
+</td><td colspan="1" rowspan="1"><p><strong><code>ClusterWorkflow</code></strong></p>
+</td><td colspan="1" rowspan="1"><p>Control Plane</p>
+</td><td colspan="1" rowspan="1"><p>平台工程師定義的 CI 食譜,宣告參數 schema(Git URL、分支、Dockerfile 路徑)與轉譯邏輯。</p>
 </td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>Argo Workflow</strong>(Workflow Plane)</p>
-</td><td colspan="1" rowspan="1"><p>真正跑建置的 Pod</p>
+<tr><td colspan="1" rowspan="1"><p><strong>3. 實例執行層</strong></p>
+</td><td colspan="1" rowspan="1"><p><strong><code>WorkflowRun</code></strong></p>
+</td><td colspan="1" rowspan="1"><p>Control Plane</p>
+</td><td colspan="1" rowspan="1"><p>開發者發起的一次建置執行,綁定特定 Component 與 Project 標籤,帶入實際參數。</p>
 </td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>ClusterWorkflowTemplate</strong>(Workflow Plane)</p>
-</td><td colspan="1" rowspan="1"><p>各步驟的可重用模板</p>
+<tr><td colspan="1" rowspan="1"><p><strong>4. 任務執行層</strong></p>
+</td><td colspan="1" rowspan="1"><p><strong><code>Argo Workflow</code></strong> + <strong><code>ClusterWorkflowTemplate</code></strong></p>
+</td><td colspan="1" rowspan="1"><p>Workflow Plane</p>
+</td><td colspan="1" rowspan="1"><p>底層工作流引擎將任務解構為 4 個獨立的 Kubernetes Pod 依序執行(每步一個 Pod)。</p>
 </td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>Registry</strong></p>
-</td><td colspan="1" rowspan="1"><p>存放建好的映像</p>
+<tr><td colspan="1" rowspan="1"><p><strong>5. 製品倉庫層</strong></p>
+</td><td colspan="1" rowspan="1"><p><strong><code>Container Registry</code></strong></p>
+</td><td colspan="1" rowspan="1"><p>Workflow Plane</p>
+</td><td colspan="1" rowspan="1"><p>儲存建置完成的容器映像,並由控制器封裝為不可變的 <code>ComponentRelease</code>。</p>
 </td></tr>
 </table>
-<h2 is-upgraded>內建的 ClusterWorkflow</h2>
-<p>你的叢集在安裝時就已經有這些建置器,查看它們:</p>
+<h3 is-upgraded>註冊中樞:ClusterWorkflowPlane</h3>
+<p>工作流平面透過 <code>ClusterWorkflowPlane</code> 向控制平面報到:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterWorkflowPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  clusterAgent:
+    clientCA:
+      value: &#34;-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----&#34;
+  secretStoreRef:
+    name: default
+</code></pre>
+<p>當工作流平面就緒後,在 OpenChoreo 控制台首頁可以直觀看到 <strong>Cluster Workflow Planes</strong> 點亮為綠色的 Connected 狀態:</p>
+<p class="image-container"><img alt="OpenChoreo 控制台首頁顯示 Cluster Workflow Planes 連線就緒" src="img/f780dd3cad919897.png"></p>
+<h2 is-upgraded>2. 為什麼建置必須獨立在 Workflow Plane?</h2>
+<p>在企業生產環境中,絕不能將 CI 建置與 Data Plane(正式線上服務)混在同一個節點,理由包含三大防禦維度:</p>
+<ul>
+<li><strong>安全隔離(防禦 Untrusted Code)</strong>: 建置過程會執行外部開發者寫的 Dockerfile 指令(<code>RUN npm install</code>、<code>RUN curl | bash</code>),具有潛在安全威脅。獨立在 Workflow Plane 可避免惡意指令橫向攻擊線上正式資料庫或業務 Pod。</li>
+<li><strong>資源隔離(防爆量 CPU/IO)</strong>: 編譯程式碼(如 Go 編譯、Maven 打包、Docker 層建立)會瞬間將 CPU、記憶體與磁碟 I/O 衝到 100%。獨立平面能徹底避免線上交易服務產生延遲甚至引發 OOM 當機。</li>
+<li><strong>彈性算力成本優化</strong>: Workflow Plane 節點可配置為雲端 Spot Instances(競價搶佔式實例),有建置任務才開機,建置完即銷毀,大幅降低企業 CI 成本。</li>
+</ul>
+<h2 is-upgraded>3. 內建的 ClusterWorkflow 建置器</h2>
+<p>你的叢集在安裝時就已經預載了多種建置器,查看它們:</p>
 <pre><code language="language-bash" class="language-bash">kubectl get clusterworkflow
 </code></pre>
 <p>預期看到 <code>dockerfile-builder</code>、<code>paketo-buildpacks-builder</code>、<code>gcp-buildpacks-builder</code>、<code>ballerina-buildpack-builder</code>。本課使用 <code>dockerfile-builder</code>,也就是用專案內的 Dockerfile 建置。</p>
@@ -303,6 +342,13 @@ spec:
 </td><td colspan="1" rowspan="1"><p>用 WorkflowRun 觸發一次建置</p>
 </td></tr>
 </table>
+<p>這個差異在 OpenChoreo Web 介面上有非常鮮明的體現：</p>
+<h3 is-upgraded>預建映像元件的 BUILD 分頁：未啟用</h3>
+<p>在第 3 課中，由於 <code>react-starter</code> 與 <code>my-greeter</code> 都採用外部 Docker Registry 的既有映像，在控制台切換至 <strong>BUILD</strong> 分頁時，平台會直接提示 <code>Workflows Not Available</code>（如下圖），因為該元件不需要內部 CI 建置。</p>
+<p class="image-container"><img alt="預建映像元件的 BUILD 分頁顯示未啟用" src="img/f4b1c9265125487d.png"></p>
+<h3 is-upgraded>原始碼元件的 BUILD 分頁：啟用 Configurations 面板</h3>
+<p>一旦元件 YAML 宣告了 <code>spec.workflow</code>（如本課的 <code>greeting-service</code>），OpenChoreo 的 <strong>BUILD</strong> 分頁就會被立即激活！點擊左側的 <strong>Configurations</strong>，平台會自動解析出 Git 來源網址、分支 (<code>main</code>)、Dockerfile 相對路徑以及建置脈絡，右上角亦提供 <strong>Edit Configurations</strong> 按鈕供隨時在介面上調整。</p>
+<p class="image-container"><img alt="greeting-service 在 OpenChoreo 介面中的建置設定面板" src="img/52f9e37ba599c399.png"></p>
 <p>Positive : <code>WorkflowRun</code> 的 labels(<code>openchoreo.dev/project</code>、<code>openchoreo.dev/component</code>)把這次建置歸屬到某個 Component。建置成功後,平台據此把新映像接回該 Component。</p>
 
 
@@ -311,15 +357,27 @@ spec:
       <google-codelab-step label="觸發並觀察建置" duration="12">
         <pre><code language="language-bash" class="language-bash">kubectl apply -f greeting-service.yaml
 </code></pre>
-<h2 is-upgraded>看 WorkflowRun</h2>
+<h2 is-upgraded>看 WorkflowRun (命令列與 Web 介面)</h2>
+<p>你可以在命令列查詢 CR 狀態：</p>
 <pre><code language="language-bash" class="language-bash">kubectl get workflowrun -n default
 </code></pre>
+<p>也可以直接切換到 OpenChoreo 控制台 <code>greeting-service</code> ➔ <strong>BUILD</strong> 分頁。平台會列出完整的 <strong>Workflow Runs</strong> 歷史清單：</p>
+<p class="image-container"><img alt="OpenChoreo 控制台中的 Workflow Runs 歷程清單與觸發按鈕" src="img/2bb49de46b96d894.png"></p>
+<ul>
+<li><strong>右上角「Build Latest」按鈕</strong>：除了打 <code>kubectl apply</code> 外，開發者隨時可以在網頁上一鍵觸發最新分支的建置。</li>
+<li><strong>建置狀態與版本審計</strong>：表格清晰列出 Run 名稱、狀態徽章（如綠色 <code>Succeeded</code> 或藍色 <code>Running</code>）、關聯 commit 與建置耗時。</li>
+</ul>
+<h2 is-upgraded>原生管線步驟與即時日誌視圖</h2>
+<p>點選表格中的任一筆 Run 紀錄，OpenChoreo 會進入專屬的管線執行詳情頁面 (<code>/workflows/run/<run-id></code>)：</p>
+<p class="image-container"><img alt="OpenChoreo 原生管線四步驟與終端即時日誌視圖" src="img/7034a83947a6a754.png"></p>
+<p>開發者可以展開任一步驟的卡片（如 <code>checkout-source</code>、<code>build-image</code>、<code>publish-image</code>、<code>generate-workload-cr</code>），直接在瀏覽器即時閱讀終端日誌（包括 Podman 編譯輸出或平台產生 Workload CR 的過程），完全不需要下指令 <code>kubectl logs</code>。</p>
 <h2 is-upgraded>看底層的 Argo Workflow</h2>
 <pre><code language="language-bash" class="language-bash">kubectl get workflow -n workflows-default --watch
 kubectl get pods -n workflows-default
 </code></pre>
 <h2 is-upgraded>或用 Argo Workflows UI</h2>
-<p>開啟 <a href="http://localhost:10081" target="_blank">http://localhost:10081</a> 可以看到圖形化的步驟。</p>
+<p>開啟 <a href="http://localhost:10081" target="_blank">http://localhost:10081</a>（預設帳號密碼可略過或關閉歡迎提示），點選 <code>workflows-default</code> 命名空間下的工作流，可以看到圖形化渲染的完整有向無環圖 (DAG)：</p>
+<p class="image-container"><img alt="Argo Workflows UI 渲染的四步驟 DAG 管線拓撲圖" src="img/9b1efa70fcb06ffe.png"></p>
 <h2 is-upgraded>建置管線的四個步驟</h2>
 <table>
 <tr><td colspan="1" rowspan="1"><p>步驟</p>
@@ -352,7 +410,11 @@ kubectl get pods -n workflows-default
 <pre><code language="language-bash" class="language-bash">kubectl get workload -n default
 kubectl get componentrelease,releasebinding -n default | grep greeting
 </code></pre>
-<p>呼叫服務(從 HTTPRoute 取出主機名稱與路徑前綴):</p>
+<h3 is-upgraded>在 OpenChoreo DEPLOY 分頁觀察自動部署</h3>
+<p>建置成功後，平台自動生成帶有唯讀映像 Hash 的 <code>ComponentRelease</code>（如 <code>greeting-service-74d6cb4f4b</code>），並根據 <code>autoDeploy: true</code> 自動發布到 Development 環境：</p>
+<p class="image-container"><img alt="建置成功後自動發布至 Development 環境的 DEPLOY 管線" src="img/cd89a112f8b07021.png"></p>
+<h3 is-upgraded>呼叫服務</h3>
+<p>從 HTTPRoute 取出主機名稱與路徑前綴：</p>
 <pre><code language="language-bash" class="language-bash">HOSTNAME=$(kubectl get httproute -A -l openchoreo.dev/component=greeting-service \
   -o jsonpath=&#39;{.items[0].spec.hostnames[0]}&#39;)
 PATH_PREFIX=$(kubectl get httproute -A -l openchoreo.dev/component=greeting-service \
@@ -360,6 +422,14 @@ PATH_PREFIX=$(kubectl get httproute -A -l openchoreo.dev/component=greeting-serv
 curl &#34;http://${HOSTNAME}:19080${PATH_PREFIX}/greeter/greet&#34;
 </code></pre>
 <p>預期輸出 <code>Hello, Stranger!</code>。</p>
+<h3 is-upgraded>在 Web UI 檢視端點並以瀏覽器調用</h3>
+<p>你也可以在 DEPLOY 介面點擊 Development 環境卡片上的 <strong>View Endpoints</strong>（或 <strong>View All</strong>），平台會彈出端點資訊視窗，清楚呈現自動配置的路由前綴：</p>
+<p class="image-container"><img alt="OpenChoreo View Endpoints 彈窗顯示自動配置的服務端點" src="img/de9b93d89aeab09d.png"></p>
+<p>複製其中的 External 網址，在瀏覽器中直接造訪：</p>
+<pre><code language="language-text" class="language-text">http://development-default.openchoreoapis.localhost:19080/greeting-service-greeter-api/greeter/greet
+</code></pre>
+<p class="image-container"><img alt="瀏覽器直接呼叫服務端點並獲得回應" src="img/f85e450c8c63d48e.png"></p>
+<p>瀏覽器順利呈現 <code>Hello, Stranger!</code>，驗證了從 Git 原始碼、平台自動建置、推送到 Registry、自動產生 Workload 到網關流量轉發的完整端到端自動化！</p>
 <p>Positive : 這個範例的端點名稱是 <code>greeter-api</code>,所以路徑前綴是 <code>/greeting-service-greeter-api</code>,和第 3 課的 <code>/my-greeter-http</code> 不同。路徑前綴由 Workload 的端點名稱決定,因此腳本直接從 HTTPRoute 讀取最保險。</p>
 
 

@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">平台工程黃金路徑：組合式架構 (ComponentType + Traits)</text>
+    <text class="c-sub" x="0" y="20">平台工程師提供標準積木與護欄，開發者透過組合自由宣告，兩者職責清晰分離</text>
+  </g>
+
+  <!-- Left: Platform Engineer (Building Blocks) -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="320" height="340" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+    <text class="c-head" x="20" y="26" fill="#174ea6">平台工程師 (定義標準積木)</text>
+    <text class="c-text" x="20" y="44" font-size="11" fill="#5f6368">寫一次規則與模板，全公司開發者自動受益</text>
+
+    <!-- ComponentType Block -->
+    <g transform="translate(15, 60)">
+      <rect width="290" height="120" rx="6" fill="#ffffff" stroke="#1a73e8"/>
+      <text class="c-head" x="12" y="24" font-size="13" fill="#174ea6">🧩 ComponentType (服務模板)</text>
+      <text class="c-code" x="12" y="44" font-size="11">internal-service (本課實做)</text>
+      <text class="c-text" x="12" y="66" font-size="10.5" fill="#3c4043">• 基礎骨架：Deployment + Service</text>
+      <text class="c-text" x="12" y="82" font-size="10.5" fill="#3c4043">• 預設安全設定與非 root 規範</text>
+      <text class="c-text" x="12" y="98" font-size="10.5" fill="#174ea6">• 平台護欄：CEL 策略驗證</text>
+      <text class="c-text" x="12" y="112" font-size="10" fill="#5f6368">• allowedTraits: [pdb, hpa...]</text>
+    </g>
+
+    <!-- Traits Block -->
+    <g transform="translate(15, 195)">
+      <rect width="290" height="120" rx="6" fill="#ffffff" stroke="#e37400"/>
+      <text class="c-head" x="12" y="24" font-size="13" fill="#b06000">🔌 Traits (可插拔附加能力)</text>
+      <text class="c-text" x="12" y="44" font-size="11" fill="#5f6368">「組合優於繼承」：獨立附加，按需選用</text>
+      <g transform="translate(10, 52)">
+        <rect width="130" height="26" rx="3" fill="#fef7e0"/>
+        <text class="c-code" x="8" y="17" font-size="10.5">pdb (本課實做)</text>
+        <rect x="140" width="130" height="26" rx="3" fill="#f8f9fa"/>
+        <text class="c-code" x="148" y="17" font-size="10.5">hpa (自動擴縮)</text>
+        <rect y="32" width="130" height="26" rx="3" fill="#f8f9fa"/>
+        <text class="c-code" x="8" y="49" font-size="10.5">metrics-exporter</text>
+        <rect x="140" y="32" width="130" height="26" rx="3" fill="#f8f9fa"/>
+        <text class="c-code" x="148" y="49" font-size="10.5">ingress-route</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Right: Application Developer (Self-service usage) -->
+  <g class="f-main" transform="translate(420, 60)">
+    <rect width="390" height="340" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+    <text class="c-head" x="20" y="26" fill="#0d652d">應用開發者 (自助宣告組合)</text>
+    <text class="c-text" x="20" y="44" font-size="11" fill="#5f6368">不必寫複雜 K8s YAML，只需挑選元件類型與附加能力</text>
+
+    <!-- Component Declaration -->
+    <g transform="translate(15, 60)">
+      <rect width="360" height="145" rx="6" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="12" y="24" font-size="12.5" fill="#137333">📝 開發者的 Component YAML (僅十幾行)</text>
+      <text class="c-code" x="12" y="48" font-size="11">kind: Component</text>
+      <text class="c-code" x="12" y="66" font-size="11">spec:</text>
+      <text class="c-code" x="24" y="84" font-size="11" fill="#174ea6">  type: internal-service  # 選擇積木</text>
+      <text class="c-code" x="24" y="102" font-size="11">  parameters: { team: checkout }</text>
+      <text class="c-code" x="24" y="120" font-size="11" fill="#b06000">  traits: [{ type: pdb, maxUnavailable: 1 }]</text>
+      <rect x="12" y="128" width="336" height="1" fill="#dadce0"/>
+    </g>
+
+    <!-- Synthesized Output -->
+    <g transform="translate(15, 215)">
+      <rect width="360" height="105" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="12" y="22" font-size="12" fill="#202124">🚀 平台引擎自動合成完整清單 (Data Plane)：</text>
+      <g transform="translate(12, 32)">
+        <rect width="105" height="60" rx="4" fill="#e8f0fe"/>
+        <text class="c-head" x="8" y="20" font-size="11" fill="#174ea6">Deployment</text>
+        <text class="c-text" x="8" y="38" font-size="10" fill="#5f6368">帶安全性設定</text>
+        <text class="c-text" x="8" y="52" font-size="10" fill="#174ea6">合規非 root</text>
+
+        <rect x="115" width="105" height="60" rx="4" fill="#e8f0fe"/>
+        <text class="c-head" x="8" y="20" font-size="11" fill="#174ea6">Service</text>
+        <text class="c-text" x="8" y="38" font-size="10" fill="#5f6368">ClusterIP</text>
+        <text class="c-text" x="8" y="52" font-size="10" fill="#174ea6">內網 DNS 就緒</text>
+
+        <rect x="230" width="100" height="60" rx="4" fill="#fef7e0"/>
+        <text class="c-head" x="8" y="20" font-size="11" fill="#b06000">PDB</text>
+        <text class="c-text" x="8" y="38" font-size="10" fill="#5f6368">維護防護</text>
+        <text class="c-text" x="8" y="52" font-size="10" fill="#b06000">maxUnavail: 1</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Connectors -->
+  <line x1="350" y1="120" x2="420" y2="120" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="350" y1="255" x2="420" y2="255" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+</svg>

@@ -221,6 +221,7 @@ css_addition = """
   color: #1a73e8 !important;
   padding: 2px 6px;
   border-radius: 4px;
+}
 .codelab-callout a {
   color: #1a73e8 !important;
   text-decoration: underline !important;
@@ -253,6 +254,25 @@ google-codelab-step blockquote::before {
   left: 16px;
   font-size: 20px;
 }
+
+/* Modern Diagram & Image Styling */
+.image-container {
+  margin: 2.2em 0 !important;
+  text-align: center !important;
+}
+.image-container img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 4px rgba(60, 64, 67, 0.12), 0 2px 8px rgba(60, 64, 67, 0.08) !important;
+  border: 1px solid #dadce0 !important;
+  background-color: #ffffff !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+.image-container img:hover {
+  box-shadow: 0 4px 16px rgba(60, 64, 67, 0.16) !important;
+}
+
 """
 
 js_addition = """

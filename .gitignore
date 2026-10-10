@@ -4,3 +4,8 @@ labs/06-gitops/repo/
 *.swp
 *~
 .DS_Store
+__pycache__/
+*.pyc
+
+# 由 tutorials 產生的 PDF(約 60MB),不進版控
+pdf/

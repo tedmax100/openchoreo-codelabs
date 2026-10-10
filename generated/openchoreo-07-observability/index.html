@@ -44,7 +44,7 @@
 <li>如何用 <code>kubectl port-forward</code> 直接查底層資料來排錯</li>
 <li>追蹤(Tracing)需要什麼條件(實際驗證在第 9 課)</li>
 </ul>
-<p>Negative : 本課的 Observer API、<code>occ component logs</code> 與入口網站的觀測畫面都需要 OAuth 登入,作者在自動化環境無法完成瀏覽器登入,所以這些介面<strong>沒有實際操作</strong>,只有列出指令。底層的 OpenSearch 與 Prometheus 查詢則是實測過的。</p>
+<p>Positive : 本課除了底層的 OpenSearch 與 Prometheus 指令查詢外,亦完整包含登入 OpenChoreo 控制台後實測擷取的真實觀測畫面(即時日誌串流、CPU/Memory 指標圖、平台審計與成本分析)。</p>
 
 
       </google-codelab-step>
@@ -93,6 +93,7 @@
 </td><td colspan="1" rowspan="1"><p>Pod 被排程、映像拉取失敗</p>
 </td></tr>
 </table>
+<p class="image-container"><img alt="可觀測性三大支柱與事件" src="img/f3126a5d8d29ed6f.svg"></p>
 <p>三者互補:<strong>指標告訴你有問題,追蹤告訴你問題在哪個服務,日誌告訴你為什麼。</strong></p>
 <h2 is-upgraded>追蹤的詞彙</h2>
 <table>
@@ -161,7 +162,8 @@
       </google-codelab-step>
     
       <google-codelab-step label="架構" duration="4">
-        <table>
+        <p class="image-container"><img alt="Observability Plane 收集、儲存與統一查詢管線全景架構" src="img/1987a23010e73c37.svg"></p>
+<table>
 <tr><td colspan="1" rowspan="1"><p>元件</p>
 </td><td colspan="1" rowspan="1"><p>角色</p>
 </td></tr>
@@ -174,28 +176,31 @@
 <tr><td colspan="1" rowspan="1"><p><strong>Prometheus + kube-state-metrics</strong></p>
 </td><td colspan="1" rowspan="1"><p>收集指標</p>
 </td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>OpenTelemetry Collector</strong></p>
-</td><td colspan="1" rowspan="1"><p>接收 OTLP 追蹤(gRPC 4317 / HTTP 4318)</p>
-</td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>events-collector</strong></p>
-</td><td colspan="1" rowspan="1"><p>把 Kubernetes 事件寫進 OpenSearch</p>
-</td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>logs / metrics / tracing adapter</strong></p>
-</td><td colspan="1" rowspan="1"><p>把各後端包成統一的查詢介面</p>
-</td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>Observer</strong></p>
-</td><td colspan="1" rowspan="1"><p>對外的查詢 API,需要 OAuth token</p>
-</td></tr>
-<tr><td colspan="1" rowspan="1"><p><strong>cluster-agent</strong></p>
-</td><td colspan="1" rowspan="1"><p>與控制平面通訊</p>
-</td></tr>
 </table>
+<p>| <strong>OpenTelemetry Collector</strong> | 接收 OTLP 追蹤(gRPC 4317 / HTTP 4318) | | <strong>events-collector</strong> | 把 Kubernetes 事件寫進 OpenSearch | | <strong>logs / metrics / tracing adapter</strong> | 把各後端包成統一的查詢介面 | | <strong>Observer</strong> | 對外的查詢 API,需要 OAuth token | | <strong>cluster-agent</strong> | 與控制平面通訊 |</p>
 <p>資料流向:</p>
 <pre><code>容器 stdout ─▶ Fluent Bit ─▶ OpenSearch ─▶ logs-adapter ┐
 cAdvisor/kube-state ─▶ Prometheus ─▶ metrics-adapter    ├─▶ Observer ─▶ Backstage / occ / MCP
 應用 OTLP ─▶ OTel Collector ─▶ OpenSearch ─▶ tracing-adapter ┘
 </code></pre>
 <p>Positive : OpenChoreo 的觀測是<strong>可替換的模組</strong>:日誌、追蹤、指標各自是一個 Helm 模組,平台團隊可以換成其他後端,只要實作對應的 adapter。</p>
+<h2 is-upgraded>核心 CRD:ClusterObservabilityPlane</h2>
+<p>在 Kubernetes 控制平面中,Observability Plane 是透過 <strong><code>ClusterObservabilityPlane</code></strong> 宣告與註冊的:</p>
+<pre><code language="language-yaml" class="language-yaml">apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterObservabilityPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  observerURL: &#34;http://observer.openchoreo.localhost:11080&#34;
+  clusterAgent:
+    clientCA:
+      value: &#34;-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----&#34;
+</code></pre>
+<ul>
+<li><strong>與 Data Plane 縫合</strong>: <code>ClusterDataPlane</code> 透過 <code>spec.observabilityPlaneRef</code> 指向此資源,自動為該資料叢集注入 Fluent Bit 收集器與標籤映射規則。</li>
+<li><strong>統一查詢通道</strong>: <code>observerURL</code> 是對外提供安全查詢的網關,讓前台 Backstage、<code>occ</code> CLI 與 AI MCP 客戶端能透過單一入口跨叢集檢索日誌與指標。</li>
+</ul>
 
 
       </google-codelab-step>
@@ -395,6 +400,8 @@ curl -sk -u &#34;$U:$P&#34; &#34;https://localhost:19200/_cat/indices?h=index,do
 <pre><code language="language-bash" class="language-bash">occ component logs obs-demo
 occ component logs obs-demo --env development -f
 </code></pre>
+<p>在入口網站的 LOGS 分頁中，亦可直接觀看 Fluent-bit 聚合至 OpenSearch 的即時日誌：</p>
+<p class="image-container"><img alt="元件即時日誌檢視" src="img/5e08118da30682f8.png"></p>
 
 
       </google-codelab-step>
@@ -407,6 +414,8 @@ curl -s localhost:19090/api/v1/query \
   --data-urlencode &#39;query=sum(container_cpu_usage_seconds_total{namespace=&#34;dp-default-default-development-f8e58905&#34;}) by (pod)&#39;
 </code></pre>
 <p>預期結果包含你的 <code>obs-demo-development-...</code> Pod 的 CPU 累計秒數。</p>
+<p>在入口網站的 METRICS 分頁中，亦可直接觀看 Prometheus 採集的 CPU 與 Memory 曲線（Limits、Requests 與實際 Usage）：</p>
+<p class="image-container"><img alt="Prometheus 資源指標檢視" src="img/f95ed19e43910a6d.png"></p>
 <p>常用查詢:</p>
 <table>
 <tr><td colspan="1" rowspan="1"><p>目的</p>
@@ -461,6 +470,14 @@ curl -s localhost:19090/api/v1/query \
 <p>Observer 只服務已通過身分驗證的使用者(入口網站、<code>occ</code>、MCP server)。</p>
 <h2 is-upgraded>用 MCP 走正門查詢</h2>
 <p>第 10 課會介紹如何用 Client Credentials 取得 token。有了 token,Observer 的 MCP 端點 <code>http://observer.openchoreo.localhost:11080/mcp</code> 就能查詢日誌與指標。實測 <code>query_component_logs</code> 查到了 <code>react-starter</code> 的存取日誌,<code>query_resource_metrics</code> 回傳了 CPU 與記憶體的時間序列。細節請見第 10 課。</p>
+<h2 is-upgraded>平台層級審計日誌 (Audit Logs) 與 成本分析 (Cost Insights)</h2>
+<p>Observability Plane 不僅收集應用層的日誌,更透過內建的 <code>events-collector</code> 與 Observer API 收集全系統的<strong>安全審計日誌</strong>與<strong>運算成本指標</strong>。在登入 OpenChoreo 控制台後:</p>
+<h3 is-upgraded>審計日誌 (Audit Logs)</h3>
+<p>在左側導航點選 <strong>Audit Logs</strong>,平台會即時呈現「誰(Actor)、在何時(Time)、對哪一個專案或元件(Resource)、執行了什麼操作(Action,如 <code>create_project</code>、<code>delete_project</code>)以及是否被允許(Result)」,即便是透過 MCP AI 代理執行的操作,也會被忠實記錄供企業合規稽核:</p>
+<p class="image-container"><img alt="OpenChoreo 平台安全審計日誌檢視" src="img/d5340d25be05b1b6.png"></p>
+<h3 is-upgraded>雲端成本洞察 (Cost Insights)</h3>
+<p>在左側導航點選 <strong>Cost Insights</strong>,平台會結合 Prometheus 資源使用量與雲端費率模型,呈現各 Project 與環境的每日資源消耗與趨勢分析:</p>
+<p class="image-container"><img alt="OpenChoreo FinOps 資源成本洞察" src="img/b606b09564cfc05c.png"></p>
 
 
       </google-codelab-step>

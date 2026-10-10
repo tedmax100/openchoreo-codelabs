@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">「建置一次，到處部署」原則 (Build Once, Deploy Everywhere)</text>
+    <text class="c-sub" x="0" y="20">現代雲原生核心實務：同一個不可變映像一路晉升，嚴禁各環境獨立重複編譯</text>
+  </g>
+
+  <!-- Top: Git commit to single build -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="360" height="100" rx="8" fill="#e8f0fe" stroke="#1a73e8"/>
+    <text class="c-head" x="20" y="26" fill="#174ea6">Git 原始碼提交</text>
+    <text class="c-code" x="20" y="46" font-size="12">Commit: a3f89b1 (feat: add greeting)</text>
+    <text class="c-text" x="20" y="66" font-size="11" fill="#5f6368">程式碼版本固定、唯一且可追溯</text>
+    <rect x="20" y="74" width="160" height="18" rx="3" fill="#ffffff" stroke="#1a73e8"/>
+    <text class="c-code" x="26" y="87" font-size="10">Dockerfile + Source</text>
+
+    <!-- Arrow right -->
+    <line x1="360" y1="110" x2="410" y2="110" stroke="#1a73e8" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
+    <text class="c-text" x="385" y="102" text-anchor="middle" font-size="10.5" fill="#174ea6">一次建置</text>
+
+    <!-- Built Immutable Image -->
+    <g transform="translate(420, 0)">
+      <rect width="360" height="100" rx="8" fill="#fef7e0" stroke="#e37400" stroke-width="2"/>
+      <text class="c-head" x="20" y="26" fill="#b06000">📦 單一不可變容器映像 (Immutable)</text>
+      <text class="c-code" x="20" y="48" font-size="11.5" font-weight="700" fill="#202124">registry.openchoreo.localhost/greeter:a3f89b1</text>
+      <text class="c-text" x="20" y="68" font-size="11" fill="#5f6368">SHA256 數位簽章雜湊完全固定</text>
+      <rect x="20" y="74" width="220" height="18" rx="3" fill="#e6f4ea"/>
+      <text class="c-text" x="26" y="87" font-size="10.5" fill="#137333" font-weight="600">✓ 產出一次，後續絕不重新打包</text>
+    </g>
+  </g>
+
+  <!-- Promotion Flow Across 3 Environments -->
+  <g class="f-main" transform="translate(30, 180)">
+    <rect width="780" height="140" rx="8" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="20" y="24" fill="#202124" font-size="13">映像晉升路徑 (各環境僅注入環境變數與差異設定，映像檔保持 100% 相同)：</text>
+
+    <!-- Dev -->
+    <g transform="translate(20, 36)">
+      <rect width="225" height="88" rx="6" fill="#e6f4ea" stroke="#137333"/>
+      <text class="c-head" x="12" y="22" fill="#0d652d" font-size="12">1. Development</text>
+      <text class="c-code" x="12" y="38" font-size="10.5">image: greeter:a3f89b1</text>
+      <text class="c-text" x="12" y="56" font-size="10.5" fill="#3c4043">覆寫：replicas: 1</text>
+      <text class="c-text" x="12" y="72" font-size="10.5" fill="#137333">功能驗證通過 ✓</text>
+    </g>
+
+    <!-- Arrow Dev -> Staging -->
+    <line x1="250" y1="80" x2="280" y2="80" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <text class="c-text" x="265" y="72" text-anchor="middle" font-size="10" fill="#137333">晉升</text>
+
+    <!-- Staging -->
+    <g transform="translate(285, 36)">
+      <rect width="225" height="88" rx="6" fill="#fef7e0" stroke="#e37400"/>
+      <text class="c-head" x="12" y="22" fill="#b06000" font-size="12">2. Staging</text>
+      <text class="c-code" x="12" y="38" font-size="10.5">image: greeter:a3f89b1</text>
+      <text class="c-text" x="12" y="56" font-size="10.5" fill="#3c4043">覆寫：replicas: 2</text>
+      <text class="c-text" x="12" y="72" font-size="10.5" fill="#b06000">整合與壓測通過 ✓</text>
+    </g>
+
+    <!-- Arrow Staging -> Prod -->
+    <line x1="515" y1="80" x2="545" y2="80" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+    <text class="c-text" x="530" y="72" text-anchor="middle" font-size="10" fill="#b06000">晉升</text>
+
+    <!-- Prod -->
+    <g transform="translate(550, 36)">
+      <rect width="210" height="88" rx="6" fill="#f3e8fd" stroke="#7b1fa2"/>
+      <text class="c-head" x="12" y="22" fill="#6a1b9a" font-size="12">3. Production</text>
+      <text class="c-code" x="12" y="38" font-size="10.5">image: greeter:a3f89b1</text>
+      <text class="c-text" x="12" y="56" font-size="10.5" fill="#3c4043">覆寫：replicas: 5, PDB</text>
+      <text class="c-text" x="12" y="72" font-size="10.5" fill="#7b1fa2">高可靠正式上線 ✓</text>
+    </g>
+  </g>
+
+  <!-- Warning callout -->
+  <g class="f-main" transform="translate(30, 335)">
+    <rect width="780" height="65" rx="6" fill="#fce8e6" stroke="#c5221f"/>
+    <text class="c-head" x="15" y="22" fill="#c5221f" font-size="12">⚠️ 為什麼嚴禁「在每個環境重新建置一次」？</text>
+    <text class="c-text" x="15" y="40" fill="#3c4043" font-size="11">即使原始碼相同，若重新 build，底層基礎映像更新或套件小版本升級 (npm/pip) 隨時可能引入幽靈 Bug！</text>
+    <text class="c-text" x="15" y="54" fill="#c5221f" font-size="11" font-weight="600">只有使用「完全相同的不可變映像」，在 Dev/Staging 測過的所有情境才 100% 能保證 Production 的行為一致。</text>
+  </g>
+
+</svg>

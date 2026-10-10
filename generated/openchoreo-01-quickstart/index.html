@@ -125,6 +125,7 @@
 </td></tr>
 </table>
 <p>重點不是「隱藏 Kubernetes」,而是<strong>提供一條鋪好的路</strong>:這條路有個名字叫 <strong>Golden Path(黃金路徑)</strong>,走這條路最簡單,同時自動符合安全與合規要求。</p>
+<p class="image-container"><img alt="Kubernetes 認知負荷 vs 平台工程黃金路徑" src="img/b020ac80c185176a.svg"></p>
 <h2 is-upgraded>OpenChoreo 在其中的位置</h2>
 <ul>
 <li>它是 <strong>CNCF Sandbox</strong> 專案(雲原生運算基金會的早期專案層級),開源</li>
@@ -135,12 +136,7 @@
 <p>Positive : 「不藏起來」這點很重要:OpenChoreo 的資源都是真正的 Kubernetes 自訂資源,你隨時可以用 <code>kubectl</code> 查看與除錯。這也是整個系列大量使用 <code>kubectl</code> 的原因。</p>
 <h2 is-upgraded>這一課的環境是怎麼組成的?</h2>
 <p>跑 Quick Start 時,背後有好幾層東西疊在一起。先建立心智圖,看到指令時就不會迷路:</p>
-<pre><code>你的電腦
-└── Docker
-    ├── 容器 A:Dev Container(裡面有安裝腳本與工具)
-    └── 容器 B:k3d 建立的 Kubernetes 叢集(其實也是 Docker 容器)
-        └── 叢集裡面:OpenChoreo 與它的相依元件(用 Helm 安裝)
-</code></pre>
+<p class="image-container"><img alt="Quick Start 本機分層堆疊心智圖" src="img/802940d76f9457bb.svg"></p>
 <table>
 <tr><td colspan="1" rowspan="1"><p>名詞</p>
 </td><td colspan="1" rowspan="1"><p>白話解釋</p>
@@ -231,6 +227,7 @@
 <pre><code>http://react-starter-development-default.openchoreoapis.localhost:19080
 </code></pre>
 <p>你會看到一個 React 範例網站。</p>
+<p class="image-container"><img alt="React Starter 實機執行畫面" src="img/9e322cdffb334815.png"></p>
 <p>Positive : 在 Dev Container 模式下,閘道(Gateway)對主機開放 <strong>19080(HTTP)</strong> 與 <strong>19443(HTTPS)</strong>。注意這個 port 與入口網站的 8080 不同。</p>
 <p>實際的主機名稱可能帶有 <code>http-</code> 前綴與雜湊後綴(例如 <code>http-react-starter-development-default-xxxxxxxx.openchoreoapis.localhost</code>),以安裝腳本輸出或 <code>kubectl get httproute -A</code> 為準。</p>
 
@@ -253,6 +250,10 @@
 </td><td colspan="1" rowspan="1"><p><code>Admin@123</code></p>
 </td></tr>
 </table>
+<p>登入時會跳轉至 ThunderID 身分認證伺服器：</p>
+<p class="image-container"><img alt="ThunderID 登入認證" src="img/789a41d2514a7239.png"></p>
+<p>登入後進入 OpenChoreo 門戶控制台主頁，可看到底層 Data / Workflow / Observability 平面連線狀態：</p>
+<p class="image-container"><img alt="OpenChoreo 控制台主頁" src="img/46f879a283cd03e7.png"></p>
 <p>登入後試著探索:</p>
 <ul>
 <li>找到剛部署的 <strong>react-starter</strong> Component</li>

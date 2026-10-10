@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 445" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="445" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">OpenChoreo 五大 Plane 模組化職責與協同架構</text>
+    <text class="c-sub" x="0" y="20">領域邊界分明、支援跨叢集獨立擴展與安全隔離的平台架構</text>
+  </g>
+
+  <!-- Top: Experience Plane -->
+  <g class="f-main" transform="translate(170, 60)">
+    <rect width="500" height="66" rx="8" fill="#f3e8fd" stroke="#7b1fa2" stroke-width="1.5"/>
+    <text class="c-head" x="250" y="24" text-anchor="middle" fill="#6a1b9a">🌐 體驗層 (Experience Plane)</text>
+    <text class="c-text" x="250" y="44" text-anchor="middle" fill="#5f6368">Backstage 開發者入口網站 (Web UI) &amp; <tspan class="f-code" fill="#7b1fa2">occ</tspan> 命令列工具 • 提供具 RBAC 權限控管的自助窗口</text>
+  </g>
+
+  <!-- Down Arrow from Experience to Control -->
+  <line x1="420" y1="126" x2="420" y2="152" stroke="#7b1fa2" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+  <!-- Center: Control Plane -->
+  <g class="f-main" transform="translate(170, 155)">
+    <rect width="500" height="85" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+    <text class="c-head" x="250" y="26" text-anchor="middle" fill="#174ea6" font-size="15">🧠 控制層 (Control Plane) - 中央大腦</text>
+    <text class="c-text" x="250" y="46" text-anchor="middle" fill="#3c4043">API 伺服器 • Controller Manager • 自訂資源 (CRD) 協調中心</text>
+    <text class="c-text" x="250" y="66" text-anchor="middle" fill="#174ea6" font-weight="600">持續將「期望狀態」調和 (Reconcile) 到各個執行層 Plane</text>
+  </g>
+
+  <!-- Branching Arrows from Control Plane to the 3 Sub Planes -->
+  <path d="M 270 240 L 270 265 L 140 265 L 140 285" fill="none" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <path d="M 420 240 L 420 285" fill="none" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <path d="M 570 240 L 570 265 L 700 265 L 700 285" fill="none" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+  <!-- Bottom Left: Workflow Plane -->
+  <g class="f-main" transform="translate(30, 290)">
+    <rect width="230" height="135" rx="8" fill="#fef7e0" stroke="#e37400" stroke-width="1.5"/>
+    <text class="c-head" x="115" y="24" text-anchor="middle" fill="#b06000">⚙️ 流程層 (Workflow Plane)</text>
+    <text class="c-text" x="115" y="42" text-anchor="middle" fill="#5f6368">CI 建置與自動化任務</text>
+    <g transform="translate(15, 52)">
+      <rect x="0" y="0" width="200" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-code" x="10" y="15">Argo Workflows 引擎</text>
+      <rect x="0" y="26" width="200" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-code" x="10" y="41">Container Registry</text>
+      <rect x="0" y="52" width="200" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="10" y="67" font-size="10.5" fill="#e37400">原始碼建置、測試、交付</text>
+    </g>
+  </g>
+
+  <!-- Bottom Center: Data Plane -->
+  <g class="f-main" transform="translate(290, 290)">
+    <rect width="260" height="135" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="2"/>
+    <text class="c-head" x="130" y="24" text-anchor="middle" fill="#0d652d">🚀 資料層 (Data Plane)</text>
+    <text class="c-text" x="130" y="42" text-anchor="middle" fill="#5f6368">使用者程式真正運行處</text>
+    <g transform="translate(15, 52)">
+      <rect x="0" y="0" width="230" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-code" x="10" y="15">Workloads (Pods / Deployments)</text>
+      <rect x="0" y="26" width="230" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-code" x="10" y="41">Envoy Gateway (流量入口)</text>
+      <rect x="0" y="52" width="230" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="10" y="67" font-size="10.5" fill="#137333">隔離環境、零特權、高安全</text>
+    </g>
+  </g>
+
+  <!-- Bottom Right: Observability Plane -->
+  <g class="f-main" transform="translate(580, 290)">
+    <rect width="230" height="135" rx="8" fill="#f1f3f4" stroke="#5f6368" stroke-width="1.5"/>
+    <text class="c-head" x="115" y="24" text-anchor="middle" fill="#3c4043">📊 觀測層 (Observability Plane)</text>
+    <text class="c-text" x="115" y="42" text-anchor="middle" fill="#5f6368">全方位監控資料彙整</text>
+    <g transform="translate(15, 52)">
+      <rect x="0" y="0" width="200" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-code" x="10" y="15">Fluent Bit (日誌收集)</text>
+      <rect x="0" y="26" width="200" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-code" x="10" y="41">OpenSearch &amp; Prometheus</text>
+      <rect x="0" y="52" width="200" height="22" rx="3" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="10" y="67" font-size="10.5" fill="#5f6368">OTel Tracing 追蹤分析</text>
+    </g>
+  </g>
+
+  <!-- Feedback telemetry arrow from Data/Obs to Experience -->
+  <path d="M 700 290 L 700 93 L 670 93" fill="none" stroke="#5f6368" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arrow-gray)"/>
+  <text class="f-main c-text" x="710" y="190" fill="#5f6368" font-size="10.5">監控回傳</text>
+
+</svg>

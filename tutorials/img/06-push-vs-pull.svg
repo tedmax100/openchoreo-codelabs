@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 12px; fill: #3c4043; }
+    .c-code { font-size: 11px; fill: #174ea6; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <!-- Card background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">推送式 (Push-based) vs 拉取式 (Pull-based GitOps) 架構對比</text>
+    <text class="c-sub" x="0" y="20">憑證保管位置、安全攻擊面與漂移偵測機制的本質差異</text>
+  </g>
+
+  <!-- Left: Push Model -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="375" height="340" rx="8" fill="#fce8e6" fill-opacity="0.3" stroke="#f5c2c7" stroke-width="1.5"/>
+    <rect width="375" height="34" rx="8" fill="#fce8e6"/>
+    <text class="c-head" x="187" y="22" text-anchor="middle" fill="#c5221f">推送式 (傳統 CI/CD Pipeline)</text>
+
+    <!-- Flow: CI -> K8s -->
+    <g transform="translate(20, 50)">
+      <rect width="130" height="80" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="65" y="24" text-anchor="middle" font-size="11" fill="#202124">外部 CI 系統</text>
+      <text class="c-text" x="65" y="42" text-anchor="middle" font-size="10" fill="#5f6368">GitHub Actions /</text>
+      <text class="c-text" x="65" y="56" text-anchor="middle" font-size="10" fill="#5f6368">Jenkins</text>
+      <rect x="10" y="62" width="110" height="14" rx="2" fill="#fce8e6"/>
+      <text class="c-text" x="65" y="73" text-anchor="middle" font-size="9" fill="#c5221f">持有 kubeconfig</text>
+
+      <line x1="130" y1="40" x2="195" y2="40" stroke="#d93025" stroke-width="2" marker-end="url(#arrow-red)"/>
+      <text class="c-code" x="162" y="32" text-anchor="middle" font-size="9" fill="#d93025">kubectl apply</text>
+
+      <rect x="205" width="130" height="80" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="270" y="24" text-anchor="middle" font-size="11" fill="#202124">生產 K8s 叢集</text>
+      <text class="c-text" x="270" y="42" text-anchor="middle" font-size="10" fill="#5f6368">對外開放 API 埠</text>
+      <text class="c-text" x="270" y="58" text-anchor="middle" font-size="9.5" fill="#d93025">憑證需常駐外部</text>
+    </g>
+
+    <!-- Characteristics list -->
+    <g transform="translate(20, 150)">
+      <rect width="335" height="170" rx="6" fill="#ffffff" stroke="#f5c2c7"/>
+      <text class="c-head" x="12" y="24" font-size="12" fill="#c5221f">缺點與安全風險：</text>
+      <text class="c-text" x="12" y="48" font-size="11" fill="#3c4043">❌ <tspan font-weight="700">高權限憑證外洩</tspan>：叢集管理金鑰保存在外部</text>
+      <text class="c-text" x="12" y="72" font-size="11" fill="#3c4043">❌ <tspan font-weight="700">無法感知手動漂移</tspan>：線上被偷改 CI 完全不知情</text>
+      <text class="c-text" x="12" y="96" font-size="11" fill="#3c4043">❌ <tspan font-weight="700">回滾流程繁瑣</tspan>：需重新觸發歷史打包流水線</text>
+      <text class="c-text" x="12" y="120" font-size="11" fill="#3c4043">❌ <tspan font-weight="700">防火牆穿透問題</tspan>：內部叢集必須開洞給外部連線</text>
+      <rect x="12" y="134" width="311" height="24" rx="4" fill="#fce8e6"/>
+      <text class="c-text" x="167" y="150" text-anchor="middle" font-size="10.5" fill="#c5221f" font-weight="600">維護成本高、安全面寬</text>
+    </g>
+  </g>
+
+  <!-- Right: Pull Model -->
+  <g class="f-main" transform="translate(435, 60)">
+    <rect width="375" height="340" rx="8" fill="#e6f4ea" fill-opacity="0.3" stroke="#a8dab5" stroke-width="1.5"/>
+    <rect width="375" height="34" rx="8" fill="#e6f4ea"/>
+    <text class="c-head" x="187" y="22" text-anchor="middle" fill="#137333">拉取式 (GitOps - OpenChoreo)</text>
+
+    <!-- Flow: Agent pulls from Git -->
+    <g transform="translate(20, 50)">
+      <rect width="130" height="80" rx="6" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="65" y="24" text-anchor="middle" font-size="11" fill="#202124">Git 儲存庫</text>
+      <text class="c-text" x="65" y="42" text-anchor="middle" font-size="10" fill="#5f6368">GitHub / GitLab /</text>
+      <text class="c-text" x="65" y="56" text-anchor="middle" font-size="10" fill="#5f6368">內部 Git 服務</text>
+      <rect x="10" y="62" width="110" height="14" rx="2" fill="#e8f0fe"/>
+      <text class="c-text" x="65" y="73" text-anchor="middle" font-size="9" fill="#174ea6">純文字宣告檔案</text>
+
+      <!-- Arrow pulling from cluster to Git -->
+      <line x1="205" y1="40" x2="140" y2="40" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+      <text class="c-code" x="172" y="32" text-anchor="middle" font-size="9" fill="#137333">週期性主動拉取</text>
+
+      <rect x="205" width="130" height="80" rx="6" fill="#ffffff" stroke="#137333"/>
+      <text class="c-head" x="270" y="24" text-anchor="middle" font-size="11" fill="#137333">叢集內部 Agent</text>
+      <text class="c-text" x="270" y="42" text-anchor="middle" font-size="10" fill="#5f6368">Argo CD 運作於叢集內</text>
+      <rect x="215" y="58" width="110" height="16" rx="2" fill="#e6f4ea"/>
+      <text class="c-text" x="270" y="70" text-anchor="middle" font-size="9" fill="#137333" font-weight="600">金鑰不出叢集</text>
+    </g>
+
+    <!-- Characteristics list -->
+    <g transform="translate(20, 150)">
+      <rect width="335" height="170" rx="6" fill="#ffffff" stroke="#a8dab5"/>
+      <text class="c-head" x="12" y="24" font-size="12" fill="#137333">優勢與架構效益：</text>
+      <text class="c-text" x="12" y="48" font-size="11" fill="#3c4043">✅ <tspan font-weight="700">最小安全攻擊面</tspan>：叢集無需對外暴露存取埠號</text>
+      <text class="c-text" x="12" y="72" font-size="11" fill="#3c4043">✅ <tspan font-weight="700">持續比對與修復</tspan>：發現線上漂移立即使動 selfHeal</text>
+      <text class="c-text" x="12" y="96" font-size="11" fill="#3c4043">✅ <tspan font-weight="700">Git 即審計軌跡</tspan>：誰在何時改了什麼一清二楚</text>
+      <text class="c-text" x="12" y="120" font-size="11" fill="#3c4043">✅ <tspan font-weight="700">秒級安心回滾</tspan>：一次 <tspan class="f-code" fill="#137333">git revert</tspan> 即刻回到歷史狀態</text>
+      <rect x="12" y="134" width="311" height="24" rx="4" fill="#e6f4ea"/>
+      <text class="c-text" x="167" y="150" text-anchor="middle" font-size="10.5" fill="#137333" font-weight="600">符合現代雲原生金牌標準</text>
+    </g>
+  </g>
+
+</svg>
