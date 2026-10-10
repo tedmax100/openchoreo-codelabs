@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#5f6368" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13px; font-weight: 700; }
+    .c-text { font-size: 11.5px; fill: #3c4043; line-height: 1.4; }
+    .c-code { font-size: 10.5px; fill: #174ea6; font-family: "Roboto Mono", Consolas, monospace; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; fill: #ffffff; }
+  </style>
+
+  <!-- Card Background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">大型語言模型 (LLM) 工具呼叫與回饋循環 (Tool Call Loop)</text>
+    <text class="c-sub" x="0" y="20">AI 模型本身不具備系統操作特權，透過受控的外部工具協議（Tool Calling）完成環境查詢與變更</text>
+  </g>
+
+  <!-- Flow Steps Container -->
+  <g class="f-main" transform="translate(30, 62)">
+
+    <!-- Step 1: User Prompt -->
+    <g transform="translate(0, 0)">
+      <rect width="140" height="260" rx="8" fill="#f3e8fd" stroke="#7b1fa2" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#7b1fa2"/>
+      <text class="badge" x="22" y="26">1</text>
+      <text class="c-head" x="38" y="26" fill="#6a1b9a">工程師提問</text>
+
+      <rect x="10" y="44" width="120" height="85" rx="5" fill="#ffffff" stroke="#e1bee7"/>
+      <text class="c-text" x="16" y="62" font-size="10.5" fill="#7b1fa2" font-weight="600">自然語言輸入：</text>
+      <text class="c-text" x="16" y="80" font-size="10.5" fill="#202124">「production</text>
+      <text class="c-text" x="16" y="96" font-size="10.5" fill="#202124">最近有沒有報錯？</text>
+      <text class="c-text" x="16" y="112" font-size="10.5" fill="#202124">請幫我查日誌」</text>
+
+      <rect x="10" y="140" width="120" height="105" rx="5" fill="#ffffff"/>
+      <text class="c-head" x="16" y="158" font-size="10.5" fill="#5f6368">角色：使用者</text>
+      <text class="c-text" x="16" y="176" font-size="10" fill="#5f6368">• 不需要背 API 參數</text>
+      <text class="c-text" x="16" y="192" font-size="10" fill="#5f6368">• 提出維運意圖</text>
+      <text class="c-text" x="16" y="208" font-size="10" fill="#5f6368">• 等待診斷結論</text>
+    </g>
+
+    <!-- Arrow 1 -> 2 -->
+    <line x1="140" y1="130" x2="158" y2="130" stroke="#7b1fa2" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+    <!-- Step 2: LLM Tool Selection -->
+    <g transform="translate(160, 0)">
+      <rect width="150" height="260" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#1a73e8"/>
+      <text class="badge" x="22" y="26">2</text>
+      <text class="c-head" x="38" y="26" fill="#174ea6">LLM 意圖推理</text>
+
+      <rect x="10" y="44" width="130" height="95" rx="5" fill="#ffffff" stroke="#bbdefb"/>
+      <text class="c-text" x="16" y="60" font-size="10" fill="#174ea6" font-weight="600">檢索工具 Schema：</text>
+      <text class="c-text" x="16" y="76" font-size="9.5" fill="#3c4043">• 判定需查詢日誌</text>
+      <text class="c-text" x="16" y="92" font-size="9.5" fill="#3c4043">• 選定 Observer 工具：</text>
+      <text class="c-code" x="16" y="108" font-size="9" fill="#1a73e8">query_component_logs</text>
+      <text class="c-text" x="16" y="124" font-size="9.5" fill="#3c4043">• 自動推算時間參數</text>
+
+      <rect x="10" y="150" width="130" height="95" rx="5" fill="#ffffff"/>
+      <text class="c-head" x="16" y="168" font-size="10.5" fill="#202124">發出調用請求</text>
+      <text class="c-text" x="16" y="186" font-size="9.5" fill="#5f6368">AI 本身不能碰系統，</text>
+      <text class="c-text" x="16" y="202" font-size="9.5" fill="#5f6368">僅產出「工具名稱」</text>
+      <text class="c-text" x="16" y="218" font-size="9.5" fill="#5f6368">與「JSON 參數」</text>
+    </g>
+
+    <!-- Arrow 2 -> 3 -->
+    <line x1="310" y1="130" x2="328" y2="130" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Step 3: MCP Protocol Dispatch -->
+    <g transform="translate(330, 0)">
+      <rect width="150" height="260" rx="8" fill="#fef7e0" stroke="#e37400" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#e37400"/>
+      <text class="badge" x="22" y="26">3</text>
+      <text class="c-head" x="38" y="26" fill="#b06000">MCP 協議派發</text>
+
+      <rect x="10" y="44" width="130" height="95" rx="5" fill="#ffffff" stroke="#ffe082"/>
+      <text class="c-text" x="16" y="60" font-size="10" fill="#b06000" font-weight="600">JSON-RPC 2.0 封裝：</text>
+      <text class="c-code" x="16" y="78" font-size="8.5" fill="#b06000">method: "tools/call"</text>
+      <text class="c-code" x="16" y="93" font-size="8.5" fill="#3c4043">name: "query_logs"</text>
+      <text class="c-code" x="16" y="108" font-size="8.5" fill="#3c4043">args: {"env":"prod",</text>
+      <text class="c-code" x="16" y="123" font-size="8.5" fill="#3c4043"> "component":"..."}</text>
+
+      <rect x="10" y="150" width="130" height="95" rx="5" fill="#ffffff"/>
+      <text class="c-head" x="16" y="168" font-size="10.5" fill="#202124">HTTP POST / SSE</text>
+      <text class="c-text" x="16" y="186" font-size="9.5" fill="#5f6368">帶入 Bearer Token</text>
+      <text class="c-text" x="16" y="202" font-size="9.5" fill="#5f6368">標準 HTTP 傳輸，</text>
+      <text class="c-text" x="16" y="218" font-size="9.5" fill="#5f6368">消除專屬整合代碼</text>
+    </g>
+
+    <!-- Arrow 3 -> 4 -->
+    <line x1="480" y1="130" x2="498" y2="130" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+    <!-- Step 4: OpenChoreo Execution -->
+    <g transform="translate(500, 0)">
+      <rect width="150" height="260" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#137333"/>
+      <text class="badge" x="22" y="26">4</text>
+      <text class="c-head" x="38" y="26" fill="#0d652d">OpenChoreo 執行</text>
+
+      <rect x="10" y="44" width="130" height="95" rx="5" fill="#ffffff" stroke="#a5d6a7"/>
+      <text class="c-text" x="16" y="60" font-size="10" fill="#0d652d" font-weight="600">受控邊界執行：</text>
+      <text class="c-text" x="16" y="76" font-size="9.5" fill="#3c4043">• 查驗 Token 權限</text>
+      <text class="c-text" x="16" y="92" font-size="9.5" fill="#3c4043">• 查詢 OpenSearch 日誌</text>
+      <text class="c-text" x="16" y="108" font-size="9.5" fill="#3c4043">• 記錄 Audit Log 稽核</text>
+      <text class="c-text" x="16" y="124" font-size="9.5" fill="#137333">✓ 取得 3 筆 Nginx 日誌</text>
+
+      <rect x="10" y="150" width="130" height="95" rx="5" fill="#ffffff"/>
+      <text class="c-head" x="16" y="168" font-size="10.5" fill="#202124">回傳結構化 JSON</text>
+      <text class="c-code" x="16" y="186" font-size="8.5" fill="#137333">structuredContent:</text>
+      <text class="c-code" x="16" y="201" font-size="8.5" fill="#3c4043">{"logs":[...],</text>
+      <text class="c-code" x="16" y="216" font-size="8.5" fill="#3c4043"> "total":3,"tookMs":12}</text>
+    </g>
+
+    <!-- Arrow 4 -> 5 -->
+    <line x1="650" y1="130" x2="668" y2="130" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- Step 5: LLM Synthesis & Reply -->
+    <g transform="translate(670, 0)">
+      <rect width="110" height="260" rx="8" fill="#f8f9fa" stroke="#5f6368" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#5f6368"/>
+      <text class="badge" x="22" y="26">5</text>
+      <text class="c-head" x="38" y="26" fill="#202124">自然語言回覆</text>
+
+      <rect x="8" y="44" width="94" height="120" rx="5" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="12" y="60" font-size="10" fill="#1a73e8">AI 閱讀並總結：</text>
+      <text class="c-text" x="12" y="78" font-size="9.5" fill="#3c4043">「已檢查最近</text>
+      <text class="c-text" x="12" y="92" font-size="9.5" fill="#3c4043">3 小時日誌，</text>
+      <text class="c-text" x="12" y="106" font-size="9.5" fill="#137333" font-weight="600">無任何 5xx 錯誤</text>
+      <text class="c-text" x="12" y="120" font-size="9.5" fill="#3c4043">全部請求均回傳</text>
+      <text class="c-text" x="12" y="134" font-size="9.5" fill="#3c4043">HTTP 200 OK」</text>
+      <text class="c-text" x="12" y="152" font-size="9.5" fill="#5f6368">✓ 達成維運目標</text>
+
+      <rect x="8" y="174" width="94" height="72" rx="4" fill="#e8f0fe"/>
+      <text class="c-head" x="12" y="192" font-size="9.5" fill="#174ea6">閉環完成</text>
+      <text class="c-text" x="12" y="208" font-size="8.5" fill="#5f6368">工程師獲得答案</text>
+      <text class="c-text" x="12" y="222" font-size="8.5" fill="#5f6368">無需手動登入排查</text>
+    </g>
+
+  </g>
+
+  <!-- Bottom Insight Bar -->
+  <g class="f-main" transform="translate(30, 335)">
+    <rect width="780" height="65" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="16" y="24" fill="#202124" font-size="12">💡 核心觀念提煉：AI 不直接碰系統，它只是「請求外部執行工具」</text>
+    <text class="c-text" x="16" y="44" fill="#5f6368" font-size="11">
+      大型語言模型（LLM）扮演大腦角色，根據工具描述（JSON Schema）判斷需要執行什麼、生成精準參數；而 MCP 扮演神經網絡與標準手腳，在嚴格的身份驗證、權限邊界與審計監控下執行真實系統操作。
+    </text>
+  </g>
+
+</svg>

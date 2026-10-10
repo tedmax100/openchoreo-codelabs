@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13px; font-weight: 700; }
+    .c-text { font-size: 11px; fill: #3c4043; }
+    .c-code { font-size: 9.5px; fill: #174ea6; font-family: "Roboto Mono", Consolas, monospace; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; fill: #ffffff; }
+  </style>
+
+  <!-- Background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">MCP over HTTP 協定交互三部曲：握手、探索與調用 (JSON-RPC 2.0)</text>
+    <text class="c-sub" x="0" y="20">AI 客戶端與 OpenChoreo MCP 伺服器之間的標準通訊時序與封包格式</text>
+  </g>
+
+  <!-- Sequence Diagram Box -->
+  <g class="f-main" transform="translate(30, 60)">
+    <!-- Column Headers -->
+    <!-- Client Column -->
+    <rect x="50" y="0" width="160" height="32" rx="4" fill="#f3e8fd" stroke="#7b1fa2"/>
+    <text class="c-head" x="130" y="20" text-anchor="middle" fill="#6a1b9a">AI Client / mcp_call.py</text>
+    <line x1="130" y1="32" x2="130" y2="280" stroke="#dadce0" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+    <!-- Server Column -->
+    <rect x="570" y="0" width="160" height="32" rx="4" fill="#e8f0fe" stroke="#1a73e8"/>
+    <text class="c-head" x="650" y="20" text-anchor="middle" fill="#174ea6">OpenChoreo MCP Server</text>
+    <line x1="650" y1="32" x2="650" y2="280" stroke="#dadce0" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+    <!-- Phase 1: Initialize -->
+    <g transform="translate(0, 45)">
+      <rect x="18" y="0" width="80" height="20" rx="3" fill="#e8f0fe"/>
+      <text class="c-head" x="24" y="14" font-size="9.5" fill="#1a73e8">① 握手宣告</text>
+
+      <!-- Client to Server -->
+      <line x1="130" y1="20" x2="640" y2="20" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+      <rect x="220" y="5" width="340" height="30" rx="3" fill="#f8f9fa" stroke="#dadce0"/>
+      <text class="c-code" x="228" y="18" fill="#1a73e8">method: "initialize", id: 1</text>
+      <text class="c-text" x="228" y="30" font-size="9" fill="#5f6368">宣告客戶端名稱、協定版本支援資訊</text>
+
+      <!-- Server to Client -->
+      <line x1="650" y1="52" x2="140" y2="52" stroke="#137333" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow-green)"/>
+      <rect x="220" y="38" width="340" height="26" rx="3" fill="#e6f4ea" stroke="#a5d6a7"/>
+      <text class="c-code" x="228" y="50" fill="#0d652d">serverInfo: {"name": "openchoreo-api", "version": "1.3"}</text>
+      <text class="c-text" x="228" y="60" font-size="8.5" fill="#5f6368">回傳伺服器資訊 (無狀態設計，不強制 session-id)</text>
+    </g>
+
+    <!-- Phase 2: Tools Discovery -->
+    <g transform="translate(0, 120)">
+      <rect x="18" y="0" width="80" height="20" rx="3" fill="#fef7e0"/>
+      <text class="c-head" x="24" y="14" font-size="9.5" fill="#b06000">② 工具探索</text>
+
+      <!-- Client to Server -->
+      <line x1="130" y1="20" x2="640" y2="20" stroke="#e37400" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+      <rect x="220" y="5" width="340" height="30" rx="3" fill="#f8f9fa" stroke="#dadce0"/>
+      <text class="c-code" x="228" y="18" fill="#b06000">method: "tools/list", id: 2</text>
+      <text class="c-text" x="228" y="30" font-size="9" fill="#5f6368">AI 查詢當前 Token 權限下所有可用工具清單</text>
+
+      <!-- Server to Client -->
+      <line x1="650" y1="52" x2="140" y2="52" stroke="#137333" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow-green)"/>
+      <rect x="220" y="38" width="340" height="32" rx="3" fill="#e6f4ea" stroke="#a5d6a7"/>
+      <text class="c-code" x="228" y="50" fill="#0d652d">tools: [{"name":"query_logs", "inputSchema": {...}}]</text>
+      <text class="c-text" x="228" y="64" font-size="8.5" fill="#5f6368">回傳完整 JSON Schema (包含參數規格、型態與必填項)</text>
+    </g>
+
+    <!-- Phase 3: Tool Execution -->
+    <g transform="translate(0, 202)">
+      <rect x="18" y="0" width="80" height="20" rx="3" fill="#f3e8fd"/>
+      <text class="c-head" x="24" y="14" font-size="9.5" fill="#7b1fa2">③ 工具調用</text>
+
+      <!-- Client to Server -->
+      <line x1="130" y1="20" x2="640" y2="20" stroke="#7b1fa2" stroke-width="1.5" marker-end="url(#arrow-purple)"/>
+      <rect x="220" y="5" width="340" height="30" rx="3" fill="#f8f9fa" stroke="#dadce0"/>
+      <text class="c-code" x="228" y="18" fill="#7b1fa2">method: "tools/call", params: {"name":"list_projects"}</text>
+      <text class="c-text" x="228" y="30" font-size="9" fill="#5f6368">AI 根據 Schema 填妥參數，發出具體執行請求</text>
+
+      <!-- Server to Client -->
+      <line x1="650" y1="52" x2="140" y2="52" stroke="#137333" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow-green)"/>
+      <rect x="220" y="38" width="340" height="32" rx="3" fill="#e6f4ea" stroke="#a5d6a7"/>
+      <text class="c-code" x="228" y="50" fill="#0d652d">result: {"content":[...], "structuredContent":{...}}</text>
+      <text class="c-text" x="228" y="64" font-size="8.5" fill="#5f6368">伺服器執行完成，以標準 JSON / SSE Stream 格式傳回</text>
+    </g>
+  </g>
+
+  <!-- Bottom Insight Bar -->
+  <g class="f-main" transform="translate(30, 355)">
+    <rect width="780" height="50" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="16" y="20" fill="#202124" font-size="11.5">📡 傳輸技術要點：標準 HTTP + JSON-RPC 2.0</text>
+    <text class="c-text" x="16" y="36" fill="#5f6368" font-size="10.5">
+      OpenChoreo MCP 採用標準 HTTP POST 承載 JSON-RPC。這意味著即使不安裝複雜的 AI 客戶端，任何工程師均能使用 curl 或簡易 Python 腳本（如本課之 mcp_call.py）直接對伺服器發起調用與測試！
+    </text>
+  </g>
+
+</svg>

@@ -38,22 +38,15 @@ Duration: 10
 
 大型語言模型(LLM)本身只會產生文字。要讓它能真的查資料、操作系統,需要**工具呼叫(tool use)**:
 
-```
-你: 「production 有沒有錯誤?」
-  │
-  ▼
-AI 判斷需要查日誌 ──▶ 發出「呼叫 query_component_logs,參數 ...」
-  │                              │
-  │◀────── 工具回傳結果 ◀────────┘
-  ▼
-AI 閱讀結果,用自然語言回答你
-```
+![大型語言模型 (LLM) 工具呼叫與回饋循環](img/10-llm-tool-use-cycle.svg)
 
-AI 自己不碰你的系統,它只是「請求呼叫某個工具」,由外部程式執行並把結果還給它。
+AI 自己不碰你的系統,它只是「請求呼叫某個工具」,由外部程式執行並把結果還給它。模型負責大腦思考與參數組裝，外部程式負責手腳執行與邊界保護。
 
 ### 問題:每個工具都要各寫一套整合
 
 如果有 N 個 AI 應用、M 個系統,就需要 N × M 個整合。**MCP(Model Context Protocol)** 是 Anthropic 提出的開放協定,目標是統一這件事:AI 應用實作一次 MCP 客戶端,系統實作一次 MCP 伺服器,就能互通。類比:USB 讓所有裝置共用同一種接口。
+
+![專屬客製整合 (N×M 困境) vs MCP 開放標準 (N+M 共通架構)](img/10-mcp-matrix-comparison.svg)
 
 ### MCP 的角色與能力
 
@@ -95,6 +88,8 @@ AI 要呼叫 API,必須證明身分。OpenChoreo 用 OAuth 2.0 的兩種授權�
 | 適用 | 桌面型 AI 助理 | 腳本、自動化、無人值守 |
 | 代表身分 | 該使用者 | 該應用本身 |
 | 本課 | 只列出設定 | 實際操作 |
+
+![OAuth 2.0 雙軌授權流程對照：PKCE vs Client Credentials](img/10-oauth-flows.svg)
 
 **PKCE** 是保護公開客戶端(無法安全保存密碼的應用)的機制,避免授權碼被攔截後被冒用。
 
@@ -159,6 +154,8 @@ Duration: 4
 | 交付 | `query_dora_metrics`、`query_dora_deployments` |
 | 稽核/事件 | `query_audit_logs`、`query_component_events`、`query_workflow_events` |
 
+![OpenChoreo 雙 MCP 伺服器體系與 147 項工具矩陣全覽](img/10-mcp-servers-matrix.svg)
+
 ## 取得存取 token
 Duration: 4
 
@@ -220,6 +217,8 @@ curl -s -X POST http://api.openchoreo.localhost:8080/mcp \
 Positive
 : 實測這個伺服器是**無狀態**的:`initialize` 沒有回傳 `Mcp-Session-Id`,不做握手也可以直接 `tools/list` 與 `tools/call`。
 
+![MCP over HTTP 協定交互三部曲：握手、探索與調用](img/10-mcp-protocol-flow.svg)
+
 ## 讀取
 Duration: 5
 
@@ -264,6 +263,8 @@ python3 -I mcp_call.py obs query_resource_metrics "{
 Negative
 : 指標工具要求:提供 `component` 就必須同時提供 `project`,否則回 `project is required when component is provided`。AI 助理遇到這種錯誤通常會自己補上參數重試,但自己寫腳本時要注意。
 
+![Observability MCP 數據查詢與聚合管道](img/10-mcp-observability-query.svg)
+
 ## 寫入:建立與刪除
 Duration: 5
 
@@ -283,6 +284,8 @@ kubectl get project -n default
 
 Positive
 : 專案是用 `kubectl` 就能看到的真實 Kubernetes 資源。MCP 並沒有另一套資料庫,它只是控制平面 API 的另一個入口,所以 GitOps、稽核日誌、RBAC 全部照常運作。
+
+![MCP 寫入操作生命週期：從調用到 Kubernetes CRD、UI 與稽核同步](img/10-mcp-write-lifecycle.svg)
 
 在入口網站的 Audit Logs 頁面中，亦能即時看到這兩筆由 MCP 調用所留下的審計日誌（Actor 為 `service_mcp_client`、Surface 為 `mcp`）：
 
@@ -363,12 +366,16 @@ token 到期後要重新取得並更新設定。Cursor、Gemini CLI、Codex CLI�
 * 「`react-starter` 在 development 最近 3 小時有沒有錯誤日誌?」
 * 「幫我把 `xxx` 從 development 晉升到 staging」(寫入操作,請先確認 AI 的計畫)
 
+![AI 助理 (Claude Code / Cursor) 多輪實戰維運對話情境實況](img/10-ai-assistant-interaction.svg)
+
 官方 repo 的 `samples/mcp` 目錄提供更完整的情境練習:服務部署、日誌分析、建置失敗診斷、資源最佳化。
 
 ## 內建 AI 代理人
 Duration: 2
 
 除了 MCP 伺服器,OpenChoreo 文件還提到三個內建功能:
+
+![OpenChoreo 平台內建三大專屬 AI 代理人](img/10-builtin-agents.svg)
 
 | 功能 | 說明 |
 |---|---|

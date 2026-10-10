@@ -1,0 +1,174 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d93025" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 11px; fill: #3c4043; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; }
+  </style>
+
+  <!-- Background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">專屬客製整合 (N×M 困境) vs MCP 開放標準 (N+M 共通架構)</text>
+    <text class="c-sub" x="0" y="20">Model Context Protocol 如同 AI 領域的「USB-C 標準」，徹底消滅蜘蛛網般的專屬膠水程式碼</text>
+  </g>
+
+  <!-- Left: Traditional N x M Pain -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="375" height="270" rx="8" fill="#fef7f7" stroke="#ea868f" stroke-width="1.5"/>
+    <rect x="12" y="12" width="160" height="22" rx="4" fill="#ffffff" stroke="#c5221f"/>
+    <text class="c-head" x="92" y="27" text-anchor="middle" fill="#c5221f" font-size="11.5">❌ 傳統專屬客製整合 (N × M)</text>
+
+    <!-- Left AI Clients -->
+    <g transform="translate(15, 46)">
+      <rect width="90" height="28" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="45" y="18" text-anchor="middle" font-weight="600">Claude Code</text>
+
+      <rect y="38" width="90" height="28" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="45" y="56" text-anchor="middle" font-weight="600">Cursor IDE</text>
+
+      <rect y="76" width="90" height="28" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="45" y="94" text-anchor="middle" font-weight="600">VS Code Copilot</text>
+
+      <rect y="114" width="90" height="28" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="45" y="132" text-anchor="middle" font-weight="600">Gemini CLI</text>
+    </g>
+
+    <!-- Right Target Systems -->
+    <g transform="translate(265, 46)">
+      <rect width="95" height="28" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="47" y="18" text-anchor="middle" font-weight="600">OpenChoreo</text>
+
+      <rect y="38" width="95" height="28" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="47" y="56" text-anchor="middle" font-weight="600">Kubernetes</text>
+
+      <rect y="76" width="95" height="28" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="47" y="94" text-anchor="middle" font-weight="600">OpenSearch</text>
+
+      <rect y="114" width="95" height="28" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-text" x="47" y="132" text-anchor="middle" font-weight="600">GitHub API</text>
+    </g>
+
+    <!-- Spaghetti lines -->
+    <path d="M 105 60 L 265 60" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 60 L 265 98" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 60 L 265 136" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 98 L 265 60" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 98 L 265 98" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 98 L 265 174" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 136 L 265 60" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 136 L 265 136" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 174 L 265 60" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+    <path d="M 105 174 L 265 174" stroke="#d93025" stroke-width="1.2" stroke-dasharray="2,2"/>
+
+    <!-- Center pain label -->
+    <rect x="125" y="95" width="125" height="36" rx="4" fill="#fce8e6" stroke="#c5221f"/>
+    <text class="c-text" x="187" y="110" text-anchor="middle" fill="#c5221f" font-weight="700">4 × 4 = 16 條專屬連結</text>
+    <text class="c-text" x="187" y="123" text-anchor="middle" fill="#5f6368" font-size="9.5">維護成本高、生態封閉</text>
+
+    <!-- Bottom summary box -->
+    <rect x="15" y="200" width="345" height="58" rx="4" fill="#ffffff" stroke="#ea868f"/>
+    <text class="c-text" x="25" y="218" font-weight="700" fill="#c5221f">致命痛點：</text>
+    <text class="c-text" x="25" y="233" fill="#5f6368">• 每個 AI 都要為不同工具開發專屬 Plugin / Extension</text>
+    <text class="c-text" x="25" y="247" fill="#5f6368">• 工具 API 稍有更新即全面破裂，認證機制各行其是</text>
+  </g>
+
+  <!-- Right: Modern MCP N + M Standard -->
+  <g class="f-main" transform="translate(435, 60)">
+    <rect width="375" height="270" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+    <rect x="12" y="12" width="165" height="22" rx="4" fill="#ffffff" stroke="#137333"/>
+    <text class="c-head" x="94" y="27" text-anchor="middle" fill="#137333" font-size="11.5">✅ MCP 開放協議架構 (N + M)</text>
+
+    <!-- Left AI Clients -->
+    <g transform="translate(15, 46)">
+      <rect width="85" height="28" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-text" x="42" y="18" text-anchor="middle" font-weight="600">Claude Code</text>
+
+      <rect y="38" width="85" height="28" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-text" x="42" y="56" text-anchor="middle" font-weight="600">Cursor IDE</text>
+
+      <rect y="76" width="85" height="28" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-text" x="42" y="94" text-anchor="middle" font-weight="600">VS Code Copilot</text>
+
+      <rect y="114" width="85" height="28" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-text" x="42" y="132" text-anchor="middle" font-weight="600">Gemini CLI</text>
+    </g>
+
+    <!-- Center: Model Context Protocol Bus -->
+    <g transform="translate(130, 46)">
+      <rect width="115" height="142" rx="6" fill="#ffffff" stroke="#1a73e8" stroke-width="2"/>
+      <rect x="8" y="8" width="99" height="22" rx="4" fill="#e8f0fe"/>
+      <text class="c-head" x="57" y="23" text-anchor="middle" fill="#174ea6" font-size="10.5">MCP 標準協定</text>
+      <text class="c-text" x="57" y="46" text-anchor="middle" font-size="9" fill="#1a73e8" font-weight="600">「AI 界的 USB-C」</text>
+
+      <line x1="12" y1="56" x2="103" y2="56" stroke="#dadce0"/>
+
+      <text class="c-text" x="14" y="74" font-size="9.5" fill="#3c4043">• JSON-RPC 2.0</text>
+      <text class="c-text" x="14" y="90" font-size="9.5" fill="#3c4043">• SSE / HTTP 傳輸</text>
+      <text class="c-text" x="14" y="106" font-size="9.5" fill="#3c4043">• 工具 Schema 自述</text>
+      <text class="c-text" x="14" y="122" font-size="9.5" fill="#3c4043">• 統一 OAuth 認證</text>
+    </g>
+
+    <!-- Right Target Systems -->
+    <g transform="translate(275, 46)">
+      <rect width="85" height="28" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-text" x="42" y="18" text-anchor="middle" font-weight="600">OpenChoreo</text>
+
+      <rect y="38" width="85" height="28" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-text" x="42" y="56" text-anchor="middle" font-weight="600">Kubernetes</text>
+
+      <rect y="76" width="85" height="28" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-text" x="42" y="94" text-anchor="middle" font-weight="600">OpenSearch</text>
+
+      <rect y="114" width="85" height="28" rx="4" fill="#ffffff" stroke="#137333"/>
+      <text class="c-text" x="42" y="132" text-anchor="middle" font-weight="600">GitHub API</text>
+    </g>
+
+    <!-- Left to Bus Lines -->
+    <line x1="100" y1="60" x2="130" y2="85" stroke="#137333" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+    <line x1="100" y1="98" x2="130" y2="98" stroke="#137333" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+    <line x1="100" y1="136" x2="130" y2="120" stroke="#137333" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+    <line x1="100" y1="174" x2="130" y2="140" stroke="#137333" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+    <!-- Bus to Right Systems Lines -->
+    <line x1="245" y1="85" x2="275" y2="60" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+    <line x1="245" y1="98" x2="275" y2="98" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+    <line x1="245" y1="120" x2="275" y2="136" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+    <line x1="245" y1="140" x2="275" y2="174" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+
+    <!-- Bottom summary box -->
+    <rect x="15" y="200" width="345" height="58" rx="4" fill="#ffffff" stroke="#137333"/>
+    <text class="c-text" x="25" y="218" font-weight="700" fill="#137333">架構優勢：</text>
+    <text class="c-text" x="25" y="233" fill="#3c4043">• AI 客戶端實作一次 MCP Client，即可操作所有相容系統</text>
+    <text class="c-text" x="25" y="247" fill="#3c4043">• OpenChoreo 開發一次 MCP Server，即可支援全部 AI 工具！</text>
+  </g>
+
+  <!-- Bottom Comparison Takeaway -->
+  <g class="f-main" transform="translate(30, 345)">
+    <rect width="780" height="55" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="16" y="22" fill="#202124" font-size="12">🔌 為什麼選擇 MCP？解耦客戶端與後端基礎設施</text>
+    <text class="c-text" x="16" y="40" fill="#5f6368" font-size="11">
+      OpenChoreo 無需為每一種 AI 助手單獨撰寫外掛或 SDK；透過開放的 MCP HTTP 規格與 JSON Schema，任何具備 MCP 支援的代理人（Agent）都能自動獲悉工具能力並精準調用。
+    </text>
+  </g>
+
+</svg>

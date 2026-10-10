@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13px; font-weight: 700; }
+    .c-text { font-size: 11px; fill: #3c4043; }
+    .c-code { font-size: 9.5px; fill: #174ea6; font-family: "Roboto Mono", Consolas, monospace; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; fill: #ffffff; }
+  </style>
+
+  <!-- Background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">MCP 寫入操作生命週期：從調用到 Kubernetes CRD、UI 與稽核同步</text>
+    <text class="c-sub" x="0" y="20">AI 透過 MCP 執行的變更並非黑箱；它直接映射至真實 K8s 資源模型，受同套 RBAC 與審計機制監管</text>
+  </g>
+
+  <!-- Flow Steps Container -->
+  <g class="f-main" transform="translate(30, 62)">
+
+    <!-- Step 1: Call -->
+    <g transform="translate(0, 0)">
+      <rect width="145" height="260" rx="8" fill="#f3e8fd" stroke="#7b1fa2" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#7b1fa2"/>
+      <text class="badge" x="22" y="26">1</text>
+      <text class="c-head" x="38" y="26" fill="#6a1b9a">發起建立調用</text>
+
+      <rect x="10" y="44" width="125" height="95" rx="4" fill="#ffffff" stroke="#e1bee7"/>
+      <text class="c-head" x="15" y="60" font-size="10" fill="#7b1fa2">mcp_call.py cp</text>
+      <text class="c-code" x="15" y="76" font-size="9" fill="#174ea6">create_project</text>
+      <text class="c-text" x="15" y="94" font-size="9" fill="#5f6368">• name: "mcp-demo"</text>
+      <text class="c-text" x="15" y="108" font-size="9" fill="#5f6368">• namespace: "default"</text>
+      <text class="c-text" x="15" y="122" font-size="9" fill="#5f6368">• desc: "created via MCP"</text>
+
+      <rect x="10" y="148" width="125" height="100" rx="4" fill="#ffffff"/>
+      <text class="c-head" x="15" y="166" font-size="10" fill="#202124">身分憑證攜帶</text>
+      <text class="c-text" x="15" y="182" font-size="9.5" fill="#5f6368">攜帶 OAuth Bearer Token</text>
+      <text class="c-text" x="15" y="196" font-size="9.5" fill="#5f6368">來自 ThunderID 簽發之</text>
+      <text class="c-code" x="15" y="210" font-size="8.5" fill="#7b1fa2">service_mcp_client</text>
+      <text class="c-text" x="15" y="228" font-size="9.5" fill="#137333">✓ 身份合法</text>
+    </g>
+
+    <!-- Arrow 1 -> 2 -->
+    <line x1="145" y1="130" x2="162" y2="130" stroke="#7b1fa2" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+    <!-- Step 2: API & RBAC -->
+    <g transform="translate(165, 0)">
+      <rect width="145" height="260" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#1a73e8"/>
+      <text class="badge" x="22" y="26">2</text>
+      <text class="c-head" x="38" y="26" fill="#174ea6">控制平面查驗</text>
+
+      <rect x="10" y="44" width="125" height="95" rx="4" fill="#ffffff" stroke="#bbdefb"/>
+      <text class="c-head" x="15" y="60" font-size="10" fill="#174ea6">RBAC 權限校驗</text>
+      <text class="c-text" x="15" y="78" font-size="9.5" fill="#3c4043">• 查核該客戶端是否具備</text>
+      <text class="c-code" x="15" y="94" font-size="9" fill="#174ea6">projects.create</text>
+      <text class="c-text" x="15" y="110" font-size="9.5" fill="#3c4043">• 檢驗命名空間存在性</text>
+      <text class="c-text" x="15" y="124" font-size="9.5" fill="#137333">✓ 鑑權通過放行</text>
+
+      <rect x="10" y="148" width="125" height="100" rx="4" fill="#ffffff"/>
+      <text class="c-head" x="15" y="166" font-size="10" fill="#202124">無後門通道</text>
+      <text class="c-text" x="15" y="184" font-size="9" fill="#5f6368">MCP 只是 API 的另一個</text>
+      <text class="c-text" x="15" y="198" font-size="9" fill="#5f6368">入口，受完全相同的安全</text>
+      <text class="c-text" x="15" y="212" font-size="9" fill="#5f6368">防護規則管轄</text>
+    </g>
+
+    <!-- Arrow 2 -> 3 -->
+    <line x1="310" y1="130" x2="327" y2="130" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Step 3: Kubernetes CRD -->
+    <g transform="translate(330, 0)">
+      <rect width="150" height="260" rx="8" fill="#fef7e0" stroke="#e37400" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#e37400"/>
+      <text class="badge" x="22" y="26">3</text>
+      <text class="c-head" x="38" y="26" fill="#b06000">K8s CRD 建立</text>
+
+      <rect x="10" y="44" width="130" height="95" rx="4" fill="#ffffff" stroke="#ffe082"/>
+      <text class="c-head" x="15" y="60" font-size="10" fill="#b06000">kubectl 可見性</text>
+      <text class="c-code" x="15" y="76" font-size="8.5" fill="#174ea6">$ kubectl get project</text>
+      <text class="c-code" x="15" y="90" font-size="8.5" fill="#3c4043">NAME      AGE</text>
+      <text class="c-code" x="15" y="104" font-size="8.5" fill="#3c4043">default   5d</text>
+      <text class="c-code" x="15" y="118" font-size="8.5" fill="#137333" font-weight="700">mcp-demo  3s</text>
+
+      <rect x="10" y="148" width="130" height="100" rx="4" fill="#ffffff"/>
+      <text class="c-head" x="15" y="166" font-size="10" fill="#202124">真正的 K8s 資源</text>
+      <text class="c-text" x="15" y="184" font-size="9" fill="#5f6368">不是模擬資料！</text>
+      <text class="c-text" x="15" y="198" font-size="9" fill="#5f6368">宣告模型生效，控制器</text>
+      <text class="c-text" x="15" y="212" font-size="9" fill="#5f6368">自動為其初始化相應管線</text>
+    </g>
+
+    <!-- Arrow 3 -> 4 -->
+    <line x1="480" y1="130" x2="497" y2="130" stroke="#e37400" stroke-width="2" marker-end="url(#arrow-orange)"/>
+
+    <!-- Step 4: Portal UI & Audit -->
+    <g transform="translate(500, 0)">
+      <rect width="150" height="260" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#137333"/>
+      <text class="badge" x="22" y="26">4</text>
+      <text class="c-head" x="38" y="26" fill="#0d652d">Portal &amp; 審計同步</text>
+
+      <rect x="10" y="44" width="130" height="95" rx="4" fill="#ffffff" stroke="#a5d6a7"/>
+      <text class="c-head" x="15" y="60" font-size="10" fill="#0d652d">Audit Log 記錄</text>
+      <text class="c-text" x="15" y="76" font-size="9" fill="#5f6368">• Actor:</text>
+      <text class="c-code" x="20" y="90" font-size="8.5" fill="#174ea6">service_mcp_client</text>
+      <text class="c-text" x="15" y="104" font-size="9" fill="#5f6368">• Action: <tspan font-family="Roboto Mono" fill="#0d652d">create_project</tspan></text>
+      <text class="c-text" x="15" y="118" font-size="9" fill="#5f6368">• Surface: <tspan font-family="Roboto Mono" fill="#174ea6">mcp</tspan></text>
+
+      <rect x="10" y="148" width="130" height="100" rx="4" fill="#ffffff"/>
+      <text class="c-head" x="15" y="166" font-size="10" fill="#202124">Portal 目錄可見</text>
+      <text class="c-text" x="15" y="184" font-size="9" fill="#5f6368">Backstage UI 首頁即時</text>
+      <text class="c-text" x="15" y="198" font-size="9" fill="#5f6368">顯示此專案；人類工程師</text>
+      <text class="c-text" x="15" y="212" font-size="9" fill="#5f6368">隨時能在介面追蹤狀態</text>
+    </g>
+
+    <!-- Arrow 4 -> 5 -->
+    <line x1="650" y1="130" x2="667" y2="130" stroke="#137333" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- Step 5: Teardown Cleanup -->
+    <g transform="translate(670, 0)">
+      <rect width="110" height="260" rx="8" fill="#f8f9fa" stroke="#5f6368" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#5f6368"/>
+      <text class="badge" x="22" y="26">5</text>
+      <text class="c-head" x="38" y="26" fill="#202124">安全清理刪除</text>
+
+      <rect x="8" y="44" width="94" height="110" rx="4" fill="#ffffff" stroke="#dadce0"/>
+      <text class="c-head" x="12" y="60" font-size="9.5" fill="#c5221f">回收專案資源：</text>
+      <text class="c-code" x="12" y="76" font-size="8" fill="#c5221f">delete_project</text>
+      <text class="c-text" x="12" y="92" font-size="8.5" fill="#5f6368">確認刪除後：</text>
+      <text class="c-text" x="12" y="106" font-size="8.5" fill="#3c4043">k8s CRD 消失</text>
+      <text class="c-text" x="12" y="120" font-size="8.5" fill="#3c4043">Audit 再記一筆</text>
+      <text class="c-text" x="12" y="136" font-size="8.5" fill="#137333" font-weight="600">✓ 零遺留殘骸</text>
+
+      <rect x="8" y="164" width="94" height="84" rx="4" fill="#e8f0fe"/>
+      <text class="c-head" x="12" y="182" font-size="9" fill="#174ea6">透明可追溯</text>
+      <text class="c-text" x="12" y="198" font-size="8" fill="#5f6368">誰改的、改了什麼</text>
+      <text class="c-text" x="12" y="212" font-size="8" fill="#5f6368">稽核記錄終身可查</text>
+    </g>
+
+  </g>
+
+  <!-- Bottom Insight Bar -->
+  <g class="f-main" transform="translate(30, 335)">
+    <rect width="780" height="65" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="16" y="24" fill="#202124" font-size="12">🔍 平台透明性保證：MCP 並非脫韁野馬</text>
+    <text class="c-text" x="16" y="44" fill="#5f6368" font-size="11">
+      AI 對平台的所有建立、更新與刪除，本質上均是調用受嚴密保護的控制平面 API。平台工程團隊無需擔心「AI 在背地裡偷偷修改底層伺服器」，所有操作在 Kubernetes 資源、Backstage 畫面與審計紀錄中均一目了然。
+    </text>
+  </g>
+
+</svg>

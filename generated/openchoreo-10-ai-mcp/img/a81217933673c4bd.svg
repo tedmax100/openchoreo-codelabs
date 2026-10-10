@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13px; font-weight: 700; }
+    .c-text { font-size: 11px; fill: #3c4043; }
+    .c-code { font-size: 9.5px; fill: #174ea6; font-family: "Roboto Mono", Consolas, monospace; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; fill: #ffffff; }
+  </style>
+
+  <!-- Background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">Observability MCP 數據查詢與聚合管道 (Query Pipeline)</text>
+    <text class="c-sub" x="0" y="20">AI 透過單一標準工具調用，由 Observer 伺服器自底層 VictoriaMetrics 與 OpenSearch 提取聚合指標與日誌</text>
+  </g>
+
+  <!-- Pipeline Diagram -->
+  <g class="f-main" transform="translate(30, 62)">
+
+    <!-- Box 1: Client Query -->
+    <g transform="translate(0, 0)">
+      <rect width="210" height="260" rx="8" fill="#f3e8fd" stroke="#7b1fa2" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#7b1fa2"/>
+      <text class="badge" x="22" y="26">1</text>
+      <text class="c-head" x="38" y="26" fill="#6a1b9a">AI 呼叫觀測工具</text>
+
+      <rect x="10" y="44" width="190" height="95" rx="4" fill="#ffffff" stroke="#e1bee7"/>
+      <text class="c-head" x="12" y="60" font-size="10" fill="#7b1fa2">query_resource_metrics</text>
+      <text class="c-code" x="12" y="76" font-size="8.5" fill="#3c4043">"component": "react-starter"</text>
+      <text class="c-code" x="12" y="90" font-size="8.5" fill="#3c4043">"environment": "development"</text>
+      <text class="c-code" x="12" y="104" font-size="8.5" fill="#3c4043">"start_time": "$S"</text>
+      <text class="c-code" x="12" y="118" font-size="8.5" fill="#3c4043">"step": "30m"</text>
+
+      <rect x="10" y="148" width="190" height="100" rx="4" fill="#ffffff"/>
+      <text class="c-head" x="12" y="166" font-size="10" fill="#202124">高階語意查詢</text>
+      <text class="c-text" x="12" y="184" font-size="9.5" fill="#5f6368">AI 不需要手寫 PromQL</text>
+      <text class="c-text" x="12" y="198" font-size="9.5" fill="#5f6368">或 Elasticsearch Query DSL，</text>
+      <text class="c-text" x="12" y="212" font-size="9.5" fill="#5f6368">僅指定平台實體名稱與時間</text>
+    </g>
+
+    <!-- Arrow 1 -> 2 -->
+    <line x1="210" y1="130" x2="235" y2="130" stroke="#7b1fa2" stroke-width="2" marker-end="url(#arrow-purple)"/>
+
+    <!-- Box 2: Observer MCP Core -->
+    <g transform="translate(235, 0)">
+      <rect width="250" height="260" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+      <circle cx="22" cy="22" r="10" fill="#1a73e8"/>
+      <text class="badge" x="22" y="26">2</text>
+      <text class="c-head" x="38" y="26" fill="#174ea6">Observer MCP 轉譯引擎</text>
+
+      <rect x="10" y="44" width="230" height="95" rx="4" fill="#ffffff" stroke="#bbdefb"/>
+      <text class="c-head" x="12" y="60" font-size="10" fill="#174ea6">底層查詢生成與派發：</text>
+      <text class="c-text" x="12" y="78" font-size="9.5" fill="#3c4043">• 查指標 ➔ 產生 PromQL：</text>
+      <text class="c-code" x="16" y="92" font-size="8" fill="#174ea6">container_cpu_usage_seconds_total</text>
+      <text class="c-text" x="12" y="108" font-size="9.5" fill="#3c4043">• 查日誌 ➔ 產生 OpenSearch DSL：</text>
+      <text class="c-code" x="16" y="122" font-size="8" fill="#174ea6">{"query":{"term":{"component":"..."}}}</text>
+
+      <!-- Backends split -->
+      <g transform="translate(10, 148)">
+        <rect width="110" height="100" rx="4" fill="#ffffff" stroke="#dadce0"/>
+        <text class="c-head" x="8" y="18" font-size="9.5" fill="#137333">VictoriaMetrics</text>
+        <text class="c-text" x="8" y="34" font-size="8.5" fill="#5f6368">Prometheus 格式</text>
+        <text class="c-text" x="8" y="48" font-size="8.5" fill="#5f6368">CPU Limits / Req</text>
+        <text class="c-text" x="8" y="62" font-size="8.5" fill="#5f6368">Memory Usage</text>
+        <text class="c-text" x="8" y="76" font-size="8.5" fill="#5f6368">時間序列數據</text>
+
+        <rect x="120" width="110" height="100" rx="4" fill="#ffffff" stroke="#dadce0"/>
+        <text class="c-head" x="8" y="18" font-size="9.5" fill="#e37400">OpenSearch</text>
+        <text class="c-text" x="8" y="34" font-size="8.5" fill="#5f6368">全文檢索存儲</text>
+        <text class="c-text" x="8" y="48" font-size="8.5" fill="#5f6368">Pod 應用日誌</text>
+        <text class="c-text" x="8" y="62" font-size="8.5" fill="#5f6368">分散式 Traces</text>
+        <text class="c-text" x="8" y="76" font-size="8.5" fill="#5f6368">結構化審計紀錄</text>
+      </g>
+    </g>
+
+    <!-- Arrow 2 -> 3 -->
+    <line x1="485" y1="130" x2="510" y2="130" stroke="#1a73e8" stroke-width="2" marker-end="url(#arrow-blue)"/>
+
+    <!-- Box 3: Structured AI Response -->
+    <g transform="translate(510, 0)">
+      <rect width="270" height="260" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+      <circle cx="22" cy="22" r="10" fill="#137333"/>
+      <text class="badge" x="22" y="26">3</text>
+      <text class="c-head" x="38" y="26" fill="#0d652d">結構化 JSON 響應</text>
+
+      <rect x="10" y="44" width="250" height="135" rx="4" fill="#ffffff" stroke="#a5d6a7"/>
+      <text class="c-head" x="12" y="60" font-size="10" fill="#0d652d">structuredContent 輸出：</text>
+      <text class="c-code" x="12" y="78" font-size="8" fill="#137333">"cpuLimits": [{"value": 0.1}],</text>
+      <text class="c-code" x="12" y="92" font-size="8" fill="#137333">"cpuUsage":  [{"value": 0.0}],</text>
+      <text class="c-code" x="12" y="106" font-size="8.5" fill="#137333">"memoryLimits": [{"value": 268435456}],</text>
+      <text class="c-code" x="12" y="120" font-size="8.5" fill="#137333">"memoryUsage":  [{"value": 15417344}]</text>
+      <text class="c-text" x="12" y="140" font-size="9" fill="#5f6368">✓ 乾淨整齊的時序數據陣列</text>
+      <text class="c-text" x="12" y="154" font-size="9" fill="#5f6368">✓ 便於 LLM 進行趨勢推理與判斷</text>
+
+      <rect x="10" y="188" width="250" height="60" rx="4" fill="#ffffff"/>
+      <text class="c-head" x="12" y="206" font-size="10" fill="#202124">LLM 快速推理</text>
+      <text class="c-text" x="12" y="222" font-size="9" fill="#3c4043">AI 直接比對 Limits 與 Usage：</text>
+      <text class="c-text" x="12" y="236" font-size="9" fill="#137333" font-weight="600">「記憶體僅使用 5.7%，負載平穩無洩漏風險」</text>
+    </g>
+
+  </g>
+
+  <!-- Bottom Insight Bar -->
+  <g class="f-main" transform="translate(30, 335)">
+    <rect width="780" height="65" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="16" y="24" fill="#202124" font-size="12">📊 解決方案優勢：屏蔽底層複雜度，以業務實體為中心</text>
+    <text class="c-text" x="16" y="44" fill="#5f6368" font-size="11">
+      工程師或 AI 助理無需關心底層 Kubernetes 的 Pod UID、Prometheus 指標命名規則或 OpenSearch Index 命名模式；Observability MCP 自動將 OpenChoreo 平台的 Project / Component / Environment 映射至對應的底層時序與日誌流。
+    </text>
+  </g>
+
+</svg>

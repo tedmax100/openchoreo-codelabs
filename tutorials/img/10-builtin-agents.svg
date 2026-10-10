@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 11px; fill: #3c4043; line-height: 1.4; }
+    .c-code { font-size: 9.5px; fill: #174ea6; font-family: "Roboto Mono", Consolas, monospace; }
+    .badge { font-size: 11px; font-weight: 700; fill: #ffffff; text-anchor: middle; }
+  </style>
+
+  <!-- Background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">OpenChoreo 平台內建三大專屬 AI 代理人 (Platform AI Agents)</text>
+    <text class="c-sub" x="0" y="20">結合 MCP 協議與可觀測性資料底座，以專用自主 Agent 實現故障自動診斷、成本瘦身與開發者賦能</text>
+  </g>
+
+  <!-- 3 Agent Cards Container -->
+  <g class="f-main" transform="translate(30, 60)">
+
+    <!-- Agent 1: SRE Agent -->
+    <g transform="translate(0, 0)">
+      <rect width="245" height="275" rx="8" fill="#fce8e6" stroke="#c5221f" stroke-width="1.5"/>
+
+      <!-- Icon & Title -->
+      <rect x="12" y="12" width="221" height="34" rx="5" fill="#ffffff" stroke="#ea868f"/>
+      <circle cx="28" cy="29" r="11" fill="#c5221f"/>
+      <text class="badge" x="28" y="33">🚨</text>
+      <text class="c-head" x="48" y="33" fill="#c5221f" font-size="12">SRE Agent (智慧排錯)</text>
+
+      <!-- Details -->
+      <g transform="translate(12, 54)">
+        <rect width="221" height="48" rx="4" fill="#ffffff"/>
+        <text class="c-head" x="10" y="18" font-size="10" fill="#c5221f">⚡ 觸發時機：</text>
+        <text class="c-text" x="10" y="34" font-size="9.5" fill="#5f6368">系統收到 Alertmanager 告警或事故</text>
+
+        <rect y="54" width="221" height="80" rx="4" fill="#ffffff"/>
+        <text class="c-head" x="10" y="72" font-size="10" fill="#202124">🛠️ 自動調用工具：</text>
+        <text class="c-code" x="10" y="88">• query_alerts / incidents</text>
+        <text class="c-code" x="10" y="104">• query_component_logs</text>
+        <text class="c-code" x="10" y="120">• query_traces (跨服務追蹤)</text>
+
+        <rect y="140" width="221" height="70" rx="4" fill="#ffffff" stroke="#c5221f"/>
+        <text class="c-head" x="10" y="158" font-size="10" fill="#c5221f">📋 產出成果：</text>
+        <text class="c-text" x="10" y="174" font-size="9.5" fill="#3c4043">自動關聯各服務時間線，產出根因分析</text>
+        <text class="c-text" x="10" y="190" font-size="9.5" fill="#3c4043">(RCA) 報告與推薦復原腳本</text>
+      </g>
+    </g>
+
+    <!-- Agent 2: FinOps Agent -->
+    <g transform="translate(267, 0)">
+      <rect width="245" height="275" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+
+      <!-- Icon & Title -->
+      <rect x="12" y="12" width="221" height="34" rx="5" fill="#ffffff" stroke="#a5d6a7"/>
+      <circle cx="28" cy="29" r="11" fill="#137333"/>
+      <text class="badge" x="28" y="33">💰</text>
+      <text class="c-head" x="48" y="33" fill="#137333" font-size="12">FinOps Agent (成本優化)</text>
+
+      <!-- Details -->
+      <g transform="translate(12, 54)">
+        <rect width="221" height="48" rx="4" fill="#ffffff"/>
+        <text class="c-head" x="10" y="18" font-size="10" fill="#137333">⚡ 觸發時機：</text>
+        <text class="c-text" x="10" y="34" font-size="9.5" fill="#5f6368">每週/月定期巡檢或帳單超支警示</text>
+
+        <rect y="54" width="221" height="80" rx="4" fill="#ffffff"/>
+        <text class="c-head" x="10" y="72" font-size="10" fill="#202124">🛠️ 自動調用工具：</text>
+        <text class="c-code" x="10" y="88">• query_costs (資源支出)</text>
+        <text class="c-code" x="10" y="104">• query_resource_metrics</text>
+        <text class="c-code" x="10" y="120">• query_recommendations</text>
+
+        <rect y="140" width="221" height="70" rx="4" fill="#ffffff" stroke="#137333"/>
+        <text class="c-head" x="10" y="158" font-size="10" fill="#137333">📋 產出成果：</text>
+        <text class="c-text" x="10" y="174" font-size="9.5" fill="#3c4043">分析 CPU/Mem Request 閒置浪費，</text>
+        <text class="c-text" x="10" y="190" font-size="9.5" fill="#3c4043">產出 Rightsizing 規格縮減建議與效益</text>
+      </g>
+    </g>
+
+    <!-- Agent 3: Portal Assistant -->
+    <g transform="translate(535, 0)">
+      <rect width="245" height="275" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+
+      <!-- Icon & Title -->
+      <rect x="12" y="12" width="221" height="34" rx="5" fill="#ffffff" stroke="#bbdefb"/>
+      <circle cx="28" cy="29" r="11" fill="#1a73e8"/>
+      <text class="badge" x="28" y="33">💬</text>
+      <text class="c-head" x="48" y="33" fill="#174ea6" font-size="12">Portal Assistant (導航助理)</text>
+
+      <!-- Details -->
+      <g transform="translate(12, 54)">
+        <rect width="221" height="48" rx="4" fill="#ffffff"/>
+        <text class="c-head" x="10" y="18" font-size="10" fill="#174ea6">⚡ 觸發時機：</text>
+        <text class="c-text" x="10" y="34" font-size="9.5" fill="#5f6368">開發者在 Backstage 入口介面對話</text>
+
+        <rect y="54" width="221" height="80" rx="4" fill="#ffffff"/>
+        <text class="c-head" x="10" y="72" font-size="10" fill="#202124">🛠️ 自動調用工具：</text>
+        <text class="c-code" x="10" y="88">• list_components / projects</text>
+        <text class="c-code" x="10" y="104">• 平台架構文檔檢索 (RAG)</text>
+        <text class="c-code" x="10" y="120">• 唯讀問答與規格查驗</text>
+
+        <rect y="140" width="221" height="70" rx="4" fill="#ffffff" stroke="#1a73e8"/>
+        <text class="c-head" x="10" y="158" font-size="10" fill="#174ea6">📋 產出成果：</text>
+        <text class="c-text" x="10" y="174" font-size="9.5" fill="#3c4043">提供 Golden Path 樣板建議、解讀</text>
+        <text class="c-text" x="10" y="190" font-size="9.5" fill="#3c4043">架構拓撲，降低新手上雲學習曲線</text>
+      </g>
+    </g>
+
+  </g>
+
+  <!-- Bottom Insight Bar -->
+  <g class="f-main" transform="translate(30, 350)">
+    <rect width="780" height="52" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="16" y="22" fill="#202124" font-size="12">🌟 未來平台工程願景：AI 原生內部開發者平台 (AI-Native IDP)</text>
+    <text class="c-text" x="16" y="38" fill="#5f6368" font-size="11">
+      OpenChoreo 透過將可觀測性與控制平面全面標準化為 MCP，讓各種不同領域的 AI 代理人各司其職，形成高協同、受管控且可審計的次世代維運自動化生態。
+    </text>
+  </g>
+
+</svg>

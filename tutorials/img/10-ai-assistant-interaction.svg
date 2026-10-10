@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 450" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13px; font-weight: 700; }
+    .c-text { font-size: 11px; fill: #3c4043; }
+    .c-code { font-size: 10px; fill: #174ea6; font-family: "Roboto Mono", Consolas, monospace; }
+    .t-user { fill: #8ab4f8; font-weight: 700; }
+    .t-ai { fill: #c58af9; font-weight: 700; }
+    .t-tool { fill: #81c995; font-weight: 700; }
+    .t-warn { fill: #fdd663; font-weight: 700; }
+  </style>
+
+  <!-- Background -->
+  <rect width="840" height="450" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 24)">
+    <text class="c-title" x="0" y="0">AI 助理 (Claude Code / Cursor) 多輪實戰維運對話情境實況</text>
+    <text class="c-sub" x="0" y="18">呈現工程師日常如何使用對話驅動 AI 查詢 OpenChoreo 健全狀態、自動排查並安全確認寫入</text>
+  </g>
+
+  <!-- Terminal Window Mockup -->
+  <g class="f-code" transform="translate(30, 52)">
+    <!-- Terminal Outer Frame -->
+    <rect width="780" height="375" rx="8" fill="#1e1e1e" stroke="#333333" stroke-width="1.5"/>
+
+    <!-- Terminal Titlebar -->
+    <rect width="780" height="30" rx="8" fill="#2d2d2d"/>
+    <rect y="22" width="780" height="8" fill="#2d2d2d"/>
+    <line x1="0" y1="30" x2="780" y2="30" stroke="#3c3c3c"/>
+
+    <!-- Traffic Lights -->
+    <circle cx="18" cy="15" r="5.5" fill="#ff5f56"/>
+    <circle cx="36" cy="15" r="5.5" fill="#ffbd2e"/>
+    <circle cx="54" cy="15" r="5.5" fill="#27c93f"/>
+
+    <text class="f-main" x="390" y="20" text-anchor="middle" fill="#999999" font-size="11">Claude Code — openchoreo-cli session (MCP connected: cp, obs)</text>
+
+    <!-- Terminal Content Area -->
+    <g transform="translate(20, 48)">
+
+      <!-- User Prompt 1 -->
+      <text x="0" y="0" font-size="11" class="t-user">❯ 你：</text>
+      <text x="50" y="0" font-size="11" fill="#e8eaed" font-family="-apple-system, BlinkMacSystemFont, sans-serif">請檢查 react-starter 在 development 環境最近 3 小時的運行狀態</text>
+
+      <!-- AI Tool Call 1 -->
+      <g transform="translate(10, 16)">
+        <rect width="730" height="42" rx="4" fill="#252526" stroke="#3c3c3c"/>
+        <text x="12" y="17" font-size="10.5" class="t-tool">⚙️ [MCP Tool Call] openchoreo-obs:query_component_logs</text>
+        <text x="12" y="32" font-size="9.5" fill="#9aa0a6">args: {"component":"react-starter", "environment":"development", "limit":3}</text>
+        <text x="560" y="24" font-size="10" fill="#81c995">✓ 回傳 3 筆 HTTP 200 日誌</text>
+      </g>
+
+      <!-- AI Tool Call 2 -->
+      <g transform="translate(10, 64)">
+        <rect width="730" height="42" rx="4" fill="#252526" stroke="#3c3c3c"/>
+        <text x="12" y="17" font-size="10.5" class="t-tool">⚙️ [MCP Tool Call] openchoreo-obs:query_resource_metrics</text>
+        <text x="12" y="32" font-size="9.5" fill="#9aa0a6">args: {"component":"react-starter", "environment":"development", "step":"30m"}</text>
+        <text x="500" y="24" font-size="10" fill="#81c995">✓ CPU: 0.01 / Mem: 14.7MB (健康)</text>
+      </g>
+
+      <!-- AI Diagnosis Answer -->
+      <g transform="translate(10, 116)">
+        <rect width="730" height="58" rx="4" fill="#2a2830" stroke="#7b1fa2" stroke-width="1"/>
+        <text x="12" y="18" font-size="11" class="t-ai">🤖 AI 助理診斷回報：</text>
+        <text x="12" y="34" font-size="10" fill="#e8eaed" font-family="-apple-system, BlinkMacSystemFont, sans-serif">
+          已查詢日誌與指標：<tspan fill="#81c995" font-weight="700">react-starter</tspan> 在 development 運行健康，無任何 5xx 錯誤日誌。
+        </text>
+        <text x="12" y="49" font-size="10" fill="#e8eaed" font-family="-apple-system, BlinkMacSystemFont, sans-serif">
+          CPU 負載僅 0.01 cores (上限 0.1)，記憶體使用 14.7 MB (上限 256MB)，各項水位極為健康穩定。
+        </text>
+      </g>
+
+      <!-- User Prompt 2 (Destructive Action Request) -->
+      <g transform="translate(0, 192)">
+        <text x="0" y="0" font-size="11" class="t-user">❯ 你：</text>
+        <text x="50" y="0" font-size="11" fill="#e8eaed" font-family="-apple-system, BlinkMacSystemFont, sans-serif">很好，那幫我把這份版本晉升 (Promote) 到 staging 環境！</text>
+      </g>
+
+      <!-- Safety Confirmation Card (Human in the loop) -->
+      <g transform="translate(10, 208)">
+        <rect width="730" height="96" rx="4" fill="#2d261e" stroke="#e37400" stroke-width="1.2"/>
+        <text x="12" y="20" font-size="11" class="t-warn">🛡️ [人機協同安全機制 Human-in-the-Loop] 偵測到寫入操作</text>
+        <text x="12" y="38" font-size="10" fill="#ffcc80" font-family="-apple-system, BlinkMacSystemFont, sans-serif">
+          AI 請求執行工具：<tspan font-family="Roboto Mono" fill="#ffffff">openchoreo-cp:update_release_binding</tspan>
+        </text>
+        <text x="12" y="54" font-size="10" fill="#e8eaed" font-family="-apple-system, BlinkMacSystemFont, sans-serif">
+          變更計畫：將 Project <tspan font-family="Roboto Mono" fill="#8ab4f8">default</tspan> 之最新 Release (<tspan font-family="Roboto Mono">default-6d675</tspan>) 綁定至 <tspan fill="#81c995">staging</tspan> 環境。
+        </text>
+        <text x="12" y="70" font-size="9.5" fill="#9aa0a6" font-family="-apple-system, BlinkMacSystemFont, sans-serif">
+          此操作將觸發 Argo CD 同步並於 staging 叢集建立新 Pod，並寫入平台審計日誌 (Audit Log)。
+        </text>
+
+        <rect x="12" y="76" width="310" height="16" rx="2" fill="#1e1e1e"/>
+        <text x="16" y="88" font-size="10" fill="#81c995" font-family="Roboto Mono">確認授權執行此項平台變更嗎？ [Y/n] : _</text>
+      </g>
+
+    </g>
+  </g>
+
+</svg>

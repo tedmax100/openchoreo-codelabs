@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 430" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13.5px; font-weight: 700; }
+    .c-text { font-size: 11px; fill: #3c4043; }
+    .c-code { font-size: 10px; fill: #174ea6; font-family: "Roboto Mono", Consolas, monospace; }
+    .badge { font-size: 11px; font-weight: 700; fill: #ffffff; }
+  </style>
+
+  <!-- Background -->
+  <rect width="840" height="430" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">OpenChoreo 雙 MCP 伺服器體系與 147 項工具矩陣全覽</text>
+    <text class="c-sub" x="0" y="20">控制平面（管理與生命週期）與觀測平面（維運與數據分析）架構解耦，分別賦予 AI 對應平台職責</text>
+  </g>
+
+  <!-- Left: Control Plane MCP -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="375" height="300" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.8"/>
+
+    <!-- Title Badge -->
+    <rect x="15" y="12" width="230" height="26" rx="4" fill="#ffffff" stroke="#1a73e8"/>
+    <text class="c-head" x="25" y="29" fill="#174ea6" font-size="12">⚙️ Control Plane MCP (130 個工具)</text>
+
+    <!-- Address info -->
+    <rect x="15" y="44" width="345" height="26" rx="4" fill="#ffffff" stroke="#bbdefb"/>
+    <text class="c-text" x="25" y="61" font-size="10.5" fill="#5f6368">端點：<tspan class="c-code" fill="#174ea6">http://api.openchoreo.localhost:8080/mcp</tspan></text>
+
+    <!-- 7 Toolsets Grid -->
+    <g transform="translate(15, 78)">
+      <rect width="345" height="150" rx="5" fill="#ffffff" stroke="#dadce0"/>
+
+      <text class="c-head" x="12" y="20" font-size="10.5" fill="#174ea6">啟用之七大核心工具集 (Toolsets)：</text>
+
+      <g transform="translate(12, 30)">
+        <!-- Col 1 -->
+        <rect width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="8" y="16" font-size="10" font-weight="600">📁 namespace &amp; project</text>
+
+        <rect y="28" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="8" y="44" font-size="10" font-weight="600">📦 component (元件管理)</text>
+
+        <rect y="56" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="8" y="72" font-size="10" font-weight="600">🚢 workload (負載規格)</text>
+
+        <rect y="84" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="8" y="100" font-size="10" font-weight="600">🔗 resource (外部相依)</text>
+
+        <!-- Col 2 -->
+        <rect x="165" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="173" y="16" font-size="10" font-weight="600">🚀 deployment (晉升部署)</text>
+
+        <rect x="165" y="28" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="173" y="44" font-size="10" font-weight="600">🔨 build (Argo 工作流)</text>
+
+        <rect x="165" y="56" width="155" height="52" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="173" y="72" font-size="10" font-weight="600">🛠️ pe (平台工程師專屬)</text>
+        <text class="c-text" x="173" y="86" font-size="9" fill="#5f6368">• 環境管理、自訂模板</text>
+        <text class="c-text" x="173" y="99" font-size="9" fill="#5f6368">• RBAC 角色與策略宣告</text>
+      </g>
+    </g>
+
+    <!-- Underlying Backends -->
+    <rect x="15" y="238" width="345" height="48" rx="4" fill="#ffffff" stroke="#bbdefb"/>
+    <text class="c-text" x="25" y="256" font-size="10" font-weight="700" fill="#174ea6">底層對接平台組件：</text>
+    <text class="c-text" x="25" y="272" font-size="9.5" fill="#3c4043">Kubernetes API Server • OpenChoreo Controller • Argo CD • Argo Workflows</text>
+  </g>
+
+  <!-- Right: Observability MCP -->
+  <g class="f-main" transform="translate(435, 60)">
+    <rect width="375" height="300" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="1.8"/>
+
+    <!-- Title Badge -->
+    <rect x="15" y="12" width="230" height="26" rx="4" fill="#ffffff" stroke="#137333"/>
+    <text class="c-head" x="25" y="29" fill="#0d652d" font-size="12">📊 Observability MCP (17 個工具)</text>
+
+    <!-- Address info -->
+    <rect x="15" y="44" width="345" height="26" rx="4" fill="#ffffff" stroke="#a5d6a7"/>
+    <text class="c-text" x="25" y="61" font-size="10.5" fill="#5f6368">端點：<tspan class="c-code" fill="#0d652d">http://observer.openchoreo.localhost:11080/mcp</tspan></text>
+
+    <!-- 7 Observability Domains Grid -->
+    <g transform="translate(15, 78)">
+      <rect width="345" height="150" rx="5" fill="#ffffff" stroke="#dadce0"/>
+
+      <text class="c-head" x="12" y="20" font-size="10.5" fill="#0d652d">七大維運觀測維度：</text>
+
+      <g transform="translate(12, 30)">
+        <!-- Col 1 -->
+        <rect width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="8" y="16" font-size="10" font-weight="600">📜 日誌 (Logs)</text>
+
+        <rect y="28" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="8" y="44" font-size="10" font-weight="600">📈 指標 (Metrics: HTTP/CPU)</text>
+
+        <rect y="56" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="8" y="72" font-size="10" font-weight="600">🔍 追蹤 (Traces &amp; Spans)</text>
+
+        <rect y="84" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="8" y="100" font-size="10" font-weight="600">🚨 告警與事故 (Alerts)</text>
+
+        <!-- Col 2 -->
+        <rect x="165" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="173" y="16" font-size="10" font-weight="600">💰 雲端成本 (Costs &amp; Rightsizing)</text>
+
+        <rect x="165" y="28" width="155" height="24" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="173" y="44" font-size="10" font-weight="600">⏱️ DORA 交付指標 (Deploy Frequency)</text>
+
+        <rect x="165" y="56" width="155" height="52" rx="3" fill="#f8f9fa"/>
+        <text class="c-text" x="173" y="72" font-size="10" font-weight="600">🛡️ 稽核審計 (Audit Logs)</text>
+        <text class="c-text" x="173" y="86" font-size="9" fill="#5f6368">• 元件事件與工作流事件</text>
+        <text class="c-text" x="173" y="99" font-size="9" fill="#5f6368">• 完整記錄誰在何時改了什麼</text>
+      </g>
+    </g>
+
+    <!-- Underlying Backends -->
+    <rect x="15" y="238" width="345" height="48" rx="4" fill="#ffffff" stroke="#a5d6a7"/>
+    <text class="c-text" x="25" y="256" font-size="10" font-weight="700" fill="#0d652d">底層對接觀測數據庫：</text>
+    <text class="c-text" x="25" y="272" font-size="9.5" fill="#3c4043">OpenSearch (Logs &amp; Traces) • VictoriaMetrics (Metrics) • Kubecost (Costs)</text>
+  </g>
+
+  <!-- Bottom Takeaway -->
+  <g class="f-main" transform="translate(30, 372)">
+    <rect width="780" height="45" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="16" y="18" fill="#202124" font-size="11.5">⚖️ 權限分離建議：</text>
+    <text class="c-text" x="16" y="34" fill="#5f6368" font-size="10.5">
+      大部分 AI 代理人（例如排錯與效能診斷助理）僅需連接 Observability MCP（全為唯讀分析）；需真正改動系統時才開放 Control Plane MCP，降低潛在風險。
+    </text>
+  </g>
+
+</svg>

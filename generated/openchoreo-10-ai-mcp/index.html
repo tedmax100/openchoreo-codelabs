@@ -53,18 +53,11 @@
       <google-codelab-step label="先備知識:AI 代理人與 MCP" duration="10">
         <h2 is-upgraded>大型語言模型怎麼「做事」?</h2>
 <p>大型語言模型(LLM)本身只會產生文字。要讓它能真的查資料、操作系統,需要<strong>工具呼叫(tool use)</strong>:</p>
-<pre><code>你: 「production 有沒有錯誤?」
-  │
-  ▼
-AI 判斷需要查日誌 ──▶ 發出「呼叫 query_component_logs,參數 ...」
-  │                              │
-  │◀────── 工具回傳結果 ◀────────┘
-  ▼
-AI 閱讀結果,用自然語言回答你
-</code></pre>
-<p>AI 自己不碰你的系統,它只是「請求呼叫某個工具」,由外部程式執行並把結果還給它。</p>
+<p class="image-container"><img alt="大型語言模型 (LLM) 工具呼叫與回饋循環" src="img/aac969df2b3ec22e.svg"></p>
+<p>AI 自己不碰你的系統,它只是「請求呼叫某個工具」,由外部程式執行並把結果還給它。模型負責大腦思考與參數組裝，外部程式負責手腳執行與邊界保護。</p>
 <h2 is-upgraded>問題:每個工具都要各寫一套整合</h2>
 <p>如果有 N 個 AI 應用、M 個系統,就需要 N × M 個整合。<strong>MCP(Model Context Protocol)</strong> 是 Anthropic 提出的開放協定,目標是統一這件事:AI 應用實作一次 MCP 客戶端,系統實作一次 MCP 伺服器,就能互通。類比:USB 讓所有裝置共用同一種接口。</p>
+<p class="image-container"><img alt="專屬客製整合 (N×M 困境) vs MCP 開放標準 (N+M 共通架構)" src="img/4a771bab9779d486.svg"></p>
 <h2 is-upgraded>MCP 的角色與能力</h2>
 <table>
 <tr><td colspan="1" rowspan="1"><p>角色</p>
@@ -127,6 +120,7 @@ AI 閱讀結果,用自然語言回答你
 </td><td colspan="1" rowspan="1"><p>實際操作</p>
 </td></tr>
 </table>
+<p class="image-container"><img alt="OAuth 2.0 雙軌授權流程對照：PKCE vs Client Credentials" src="img/f0fcbebefdcb698d.svg"></p>
 <p><strong>PKCE</strong> 是保護公開客戶端(無法安全保存密碼的應用)的機制,避免授權碼被攔截後被冒用。</p>
 <p>取得的 <strong>access token</strong> 是一串有時效的憑證,放在 HTTP 標頭 <code>Authorization: Bearer <token></code> 送出。</p>
 <h2 is-upgraded>AI 操作基礎設施的風險</h2>
@@ -231,6 +225,7 @@ AI 閱讀結果,用自然語言回答你
 </td><td colspan="1" rowspan="1"><p><code>query_audit_logs</code>、<code>query_component_events</code>、<code>query_workflow_events</code></p>
 </td></tr>
 </table>
+<p class="image-container"><img alt="OpenChoreo 雙 MCP 伺服器體系與 147 項工具矩陣全覽" src="img/91b483d089225a0e.svg"></p>
 
 
       </google-codelab-step>
@@ -295,6 +290,7 @@ curl -s -X POST http://api.openchoreo.localhost:8080/mcp \
 </td></tr>
 </table>
 <p>Positive : 實測這個伺服器是<strong>無狀態</strong>的:<code>initialize</code> 沒有回傳 <code>Mcp-Session-Id</code>,不做握手也可以直接 <code>tools/list</code> 與 <code>tools/call</code>。</p>
+<p class="image-container"><img alt="MCP over HTTP 協定交互三部曲：握手、探索與調用" src="img/e93810e3a7065ae2.svg"></p>
 
 
       </google-codelab-step>
@@ -328,6 +324,7 @@ python3 -I mcp_call.py obs query_component_logs &#34;{
 </code></pre>
 <p>預期回傳 <code>cpuUsage</code>、<code>cpuRequests</code>、<code>cpuLimits</code>、<code>memoryUsage</code>... 的時間序列。</p>
 <p>Negative : 指標工具要求:提供 <code>component</code> 就必須同時提供 <code>project</code>,否則回 <code>project is required when component is provided</code>。AI 助理遇到這種錯誤通常會自己補上參數重試,但自己寫腳本時要注意。</p>
+<p class="image-container"><img alt="Observability MCP 數據查詢與聚合管道" src="img/a81217933673c4bd.svg"></p>
 
 
       </google-codelab-step>
@@ -344,6 +341,7 @@ kubectl get project -n default
 </code></pre>
 <p>預期第一次 <code>kubectl get project</code> 多出 <code>mcp-demo</code>,刪除後消失。</p>
 <p>Positive : 專案是用 <code>kubectl</code> 就能看到的真實 Kubernetes 資源。MCP 並沒有另一套資料庫,它只是控制平面 API 的另一個入口,所以 GitOps、稽核日誌、RBAC 全部照常運作。</p>
+<p class="image-container"><img alt="MCP 寫入操作生命週期：從調用到 Kubernetes CRD、UI 與稽核同步" src="img/82acb3821fd0561c.svg"></p>
 <p>在入口網站的 Audit Logs 頁面中，亦能即時看到這兩筆由 MCP 調用所留下的審計日誌（Actor 為 <code>service_mcp_client</code>、Surface 為 <code>mcp</code>）：</p>
 <p class="image-container"><img alt="MCP 調用所留下之 Audit Logs 稽核紀錄" src="img/d5340d25be05b1b6.png"></p>
 
@@ -412,6 +410,7 @@ claude mcp add --transport http \
 <li>「<code>react-starter</code> 在 development 最近 3 小時有沒有錯誤日誌?」</li>
 <li>「幫我把 <code>xxx</code> 從 development 晉升到 staging」(寫入操作,請先確認 AI 的計畫)</li>
 </ul>
+<p class="image-container"><img alt="AI 助理 (Claude Code / Cursor) 多輪實戰維運對話情境實況" src="img/74a36e027d699a04.svg"></p>
 <p>官方 repo 的 <code>samples/mcp</code> 目錄提供更完整的情境練習:服務部署、日誌分析、建置失敗診斷、資源最佳化。</p>
 
 
@@ -419,6 +418,7 @@ claude mcp add --transport http \
     
       <google-codelab-step label="內建 AI 代理人" duration="2">
         <p>除了 MCP 伺服器,OpenChoreo 文件還提到三個內建功能:</p>
+<p class="image-container"><img alt="OpenChoreo 平台內建三大專屬 AI 代理人" src="img/da0658925892ad71.svg"></p>
 <table>
 <tr><td colspan="1" rowspan="1"><p>功能</p>
 </td><td colspan="1" rowspan="1"><p>說明</p>

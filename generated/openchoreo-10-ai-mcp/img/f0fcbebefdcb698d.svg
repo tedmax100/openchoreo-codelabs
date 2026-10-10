@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" width="100%" height="auto" style="max-width:840px; display:block; margin:auto;">
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a73e8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#137333" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#7b1fa2" />
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e37400" />
+    </marker>
+    <filter id="shadow" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#202124" flood-opacity="0.08" />
+    </filter>
+  </defs>
+  <style>
+    .f-main { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    .f-code { font-family: "Roboto Mono", Consolas, monospace; }
+    .c-title { font-size: 16px; font-weight: 700; fill: #202124; }
+    .c-sub { font-size: 12px; fill: #5f6368; }
+    .c-head { font-size: 13px; font-weight: 700; }
+    .c-text { font-size: 11px; fill: #3c4043; }
+    .c-code { font-size: 10px; fill: #174ea6; font-family: "Roboto Mono", Consolas, monospace; }
+    .badge { font-size: 11px; font-weight: 700; text-anchor: middle; fill: #ffffff; }
+  </style>
+
+  <!-- Background -->
+  <rect width="840" height="420" rx="10" fill="#ffffff" stroke="#dadce0" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Header -->
+  <g class="f-main" transform="translate(30, 26)">
+    <text class="c-title" x="0" y="0">OAuth 2.0 雙軌授權流程對照：PKCE vs Client Credentials</text>
+    <text class="c-sub" x="0" y="20">區分「人機協同桌面助理」與「背景自動化無人值守腳本」，兼顧安全性與自動化效率</text>
+  </g>
+
+  <!-- Left: Flow A - Auth Code + PKCE -->
+  <g class="f-main" transform="translate(30, 60)">
+    <rect width="375" height="270" rx="8" fill="#f3e8fd" stroke="#7b1fa2" stroke-width="1.5"/>
+    <rect x="12" y="12" width="220" height="22" rx="4" fill="#ffffff" stroke="#7b1fa2"/>
+    <text class="c-head" x="122" y="27" text-anchor="middle" fill="#6a1b9a" font-size="11.5">流程 A: Authorization Code + PKCE</text>
+
+    <!-- Role description -->
+    <text class="c-text" x="15" y="52" fill="#7b1fa2" font-weight="600">👤 適用角色：桌面 AI 助理 (人機協同 / 瀏覽器登入)</text>
+
+    <!-- Steps -->
+    <g transform="translate(15, 62)">
+      <!-- Step 1 -->
+      <rect width="345" height="38" rx="4" fill="#ffffff" stroke="#e1bee7"/>
+      <circle cx="18" cy="19" r="9" fill="#7b1fa2"/>
+      <text class="badge" x="18" y="23">1</text>
+      <text class="c-head" x="35" y="16" font-size="10.5" fill="#202124">Claude Code / Cursor 發起授權</text>
+      <text class="c-text" x="35" y="30" font-size="9.5" fill="#5f6368">生成 PKCE code_verifier 與 challenge，彈出本機瀏覽器</text>
+
+      <!-- Step 2 -->
+      <rect y="44" width="345" height="38" rx="4" fill="#ffffff" stroke="#e1bee7"/>
+      <circle cx="18" cy="63" r="9" fill="#7b1fa2"/>
+      <text class="badge" x="18" y="67">2</text>
+      <text class="c-head" x="35" y="60" font-size="10.5" fill="#202124">工程師於 ThunderID 介面登入</text>
+      <text class="c-text" x="35" y="74" font-size="9.5" fill="#5f6368">輸入 admin@openchoreo.dev 帳密並確認授權</text>
+
+      <!-- Step 3 -->
+      <rect y="88" width="345" height="38" rx="4" fill="#ffffff" stroke="#e1bee7"/>
+      <circle cx="18" cy="107" r="9" fill="#7b1fa2"/>
+      <text class="badge" x="18" y="111">3</text>
+      <text class="c-head" x="35" y="104" font-size="10.5" fill="#202124">回傳 Auth Code 並透過 PKCE 換取 Token</text>
+      <text class="c-text" x="35" y="118" font-size="9.5" fill="#5f6368">驗證 code_verifier，防止授權碼遭第三方攔截冒用</text>
+
+      <!-- Step 4 -->
+      <rect y="132" width="345" height="42" rx="4" fill="#ffffff" stroke="#7b1fa2" stroke-width="1.2"/>
+      <circle cx="18" cy="153" r="9" fill="#137333"/>
+      <text class="badge" x="18" y="157">✓</text>
+      <text class="c-head" x="35" y="148" font-size="10.5" fill="#137333">取得「個人身分」之 Access Token</text>
+      <text class="c-text" x="35" y="163" font-size="9.5" fill="#3c4043">AI 完全繼承該工程師在 OpenChoreo 中的 RBAC 角色權限</text>
+    </g>
+
+    <text class="c-text" x="15" y="258" font-size="10" fill="#7b1fa2">OAuth 應用名稱：<tspan font-family="Roboto Mono" fill="#174ea6">user_mcp_client</tspan> (預設埠 8075)</text>
+  </g>
+
+  <!-- Right: Flow B - Client Credentials -->
+  <g class="f-main" transform="translate(435, 60)">
+    <rect width="375" height="270" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+    <rect x="12" y="12" width="220" height="22" rx="4" fill="#ffffff" stroke="#1a73e8"/>
+    <text class="c-head" x="122" y="27" text-anchor="middle" fill="#174ea6" font-size="11.5">流程 B: Client Credentials (M2M)</text>
+
+    <!-- Role description -->
+    <text class="c-text" x="15" y="52" fill="#174ea6" font-weight="600">🤖 適用角色：自動化腳本 / CI / 無人值守 Agent</text>
+
+    <!-- Steps -->
+    <g transform="translate(15, 62)">
+      <!-- Step 1 -->
+      <rect width="345" height="38" rx="4" fill="#ffffff" stroke="#bbdefb"/>
+      <circle cx="18" cy="19" r="9" fill="#1a73e8"/>
+      <text class="badge" x="18" y="23">1</text>
+      <text class="c-head" x="35" y="16" font-size="10.5" fill="#202124">腳本 / 程式直接發起 HTTP POST</text>
+      <text class="c-text" x="35" y="30" font-size="9.5" fill="#5f6368">帶入 client_id 與 client_secret 憑證參數</text>
+
+      <!-- Step 2 -->
+      <rect y="44" width="345" height="38" rx="4" fill="#ffffff" stroke="#bbdefb"/>
+      <circle cx="18" cy="63" r="9" fill="#1a73e8"/>
+      <text class="badge" x="18" y="67">2</text>
+      <text class="c-head" x="35" y="60" font-size="10.5" fill="#202124">無須瀏覽器與人工介入操作</text>
+      <text class="c-text" x="35" y="74" font-size="9.5" fill="#5f6368">直接請求 ThunderID /oauth2/token 端點</text>
+
+      <!-- Step 3 -->
+      <rect y="88" width="345" height="38" rx="4" fill="#ffffff" stroke="#bbdefb"/>
+      <circle cx="18" cy="107" r="9" fill="#1a73e8"/>
+      <text class="badge" x="18" y="111">3</text>
+      <text class="c-head" x="35" y="104" font-size="10.5" fill="#202124">ThunderID 伺服器驗證帳密有效性</text>
+      <text class="c-text" x="35" y="118" font-size="9.5" fill="#5f6368">確認該服務應用註冊資訊無誤後立即簽發 JWT</text>
+
+      <!-- Step 4 -->
+      <rect y="132" width="345" height="42" rx="4" fill="#ffffff" stroke="#1a73e8" stroke-width="1.2"/>
+      <circle cx="18" cy="153" r="9" fill="#137333"/>
+      <text class="badge" x="18" y="157">✓</text>
+      <text class="c-head" x="35" y="148" font-size="10.5" fill="#137333">取得「服務帳號」之 Access Token</text>
+      <text class="c-text" x="35" y="163" font-size="9.5" fill="#3c4043">本課實驗正是使用此流程 (由 mcp_call.py 自動換證)</text>
+    </g>
+
+    <text class="c-text" x="15" y="258" font-size="10" fill="#174ea6">OAuth 應用名稱：<tspan font-family="Roboto Mono" fill="#174ea6">service_mcp_client</tspan> (預設有效 24 小時)</text>
+  </g>
+
+  <!-- Bottom Comparison Takeaway -->
+  <g class="f-main" transform="translate(30, 345)">
+    <rect width="780" height="55" rx="6" fill="#f8f9fa" stroke="#dadce0"/>
+    <text class="c-head" x="16" y="22" fill="#202124" font-size="12">🔑 實務安全性原則：依據運行情境嚴格分流</text>
+    <text class="c-text" x="16" y="40" fill="#5f6368" font-size="11">
+      工程師在本機日常使用 Claude/Cursor 建議走 PKCE 流程；正式環境之 CI/CD 或定時維運 Agent 應配置專用 Client Credentials 並綁定最小 RBAC 角色，避免混用工程師個人帳號以確保稽核（Audit）清晰。
+    </text>
+  </g>
+
+</svg>
