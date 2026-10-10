@@ -371,20 +371,97 @@ token 到期後要重新取得並更新設定。Cursor、Gemini CLI、Codex CLI�
 官方 repo 的 `samples/mcp` 目錄提供更完整的情境練習:服務部署、日誌分析、建置失敗診斷、資源最佳化。
 
 ## 內建 AI 代理人
-Duration: 2
+Duration: 6
 
-除了 MCP 伺服器,OpenChoreo 文件還提到三個內建功能:
+除了讓外部 AI 客戶端透過 MCP 連線之外，OpenChoreo 官方架構中還原生設計了三個專屬的內建 AI 代理人（Built-in Agents）：**SRE Agent**、**FinOps Agent** 與 **Portal Assistant**。
+
+這些代理人並非獨立的外掛工具，而是作為平台的「一等平台公民（First-Class Platform Users）」，完全建立在我們前面學過的 **MCP 伺服器** 與可觀測性底座之上，並受同一套 RBAC 與安全邊界監管。
 
 ![OpenChoreo 平台內建三大專屬 AI 代理人](img/10-builtin-agents.svg)
 
-| 功能 | 說明 |
-|---|---|
-| **SRE Agent** | 告警觸發時分析日誌、指標與追蹤,產出可能根因報告 |
-| **FinOps Agent** | 分析資源使用,提出降低成本的 rightsizing 建議 |
-| **Portal Assistant** | Backstage 內的唯讀對話助理 |
+### 1. SRE Agent：事件驅動的智慧根因分析 (RCA)
+
+[SRE Agent](https://openchoreo.dev/docs/ai/sre-agent/) 專為事故管理與智慧除錯設計，它的核心定位是**根因分析 (Root Cause Analysis, RCA)**：
+
+* **事件驅動喚醒**：它並非無休止地全天候輪詢，而是在監控告警規則中標記 `triggerAiRca: true`。當 Alertmanager 發出關鍵告警（Critical Alert）時，自動觸發分析任務，有效控制 LLM 調用成本。
+* **MCP 資料協同**：SRE Agent 透過 Observability MCP 自動調用 `query_alerts`、`query_component_logs` 與 `query_traces`，撈取事故發生前後 10 分鐘的日誌異常、錯誤堆疊與跨服務呼叫鏈。
+* **RCA 報告與修復建議**：產出的分析報告預設持久化儲存於 SQLite（生產環境可切換 PostgreSQL），並在 Backstage UI 的告警頁面直接呈現可能根因、影響範圍與推薦的復原指令。
+
+#### 官方啟用配置摘要
+
+SRE Agent 需要真實的 LLM API Key（目前官方原生支援 OpenAI 系列模型），並透過 OpenBao Vault 與 ExternalSecrets 注入：
+
+```bash
+# 1. 於 OpenBao 寫入 LLM API Key
+kubectl exec -n openbao openbao-0 -- \
+  env BAO_ADDR=http://127.0.0.1:8200 BAO_TOKEN=root \
+  bao kv put secret/rca-llm-api-key value="<YOUR_LLM_API_KEY>"
+
+# 2. 升級 Observability Plane 啟用 RCA
+helm upgrade --install openchoreo-observability-plane \
+  oci://cr.openchoreo.dev/openchoreo/helm-charts/openchoreo-observability-plane \
+  --namespace openchoreo-observability-plane \
+  --reuse-values \
+  --set rca.enabled=true \
+  --set rca.llm.modelName=gpt-5.4
+
+# 3. 於控制平面註冊 RCA Agent 端點
+kubectl patch clusterobservabilityplane default --type=merge \
+  -p '{"spec":{"rcaAgentURL":"http://rca-agent.openchoreo.localhost:11080"}}'
+```
+
+### 2. FinOps Agent：排程巡檢與成本最佳化 (Rightsizing)
+
+[FinOps Agent](https://openchoreo.dev/docs/ai/finops-agent/) 專注於雲端成本治理與資源規格建議：
+
+* **數據來源**：依賴 OpenChoreo 的 FinOps 模組（如社群維護的 OpenCost 模組）採集 Kubernetes 容器資源花費。
+* **自動分析閒置**：定期分析各元件所宣告的 `cpu/memory requests` 與歷史實際使用峰值，找出過度配置（Over-provisioned）的 Workload。
+* **具體縮容建議**：產出 Rightsizing 規格調整建議（例如建議將 CPU Request 從 2 Core 降為 0.5 Core），並精確估算每月可省下的雲端金額。
+
+#### 官方啟用配置摘要
+
+```bash
+# 啟用 FinOps Agent 並開啟建議功能
+helm upgrade --install openchoreo-observability-plane \
+  oci://cr.openchoreo.dev/openchoreo/helm-charts/openchoreo-observability-plane \
+  --namespace openchoreo-observability-plane \
+  --reuse-values \
+  --set finOpsAgent.enabled=true \
+  --set finOpsAgent.llmName=gpt-5.4 \
+  --set finOpsAgent.remediationEnabled=true
+
+# 註冊 FinOps 端點
+kubectl patch clusterobservabilityplane default --type=merge \
+  -p '{"spec":{"finOpsAgentURL":"http://finops-agent.openchoreo.localhost:11080"}}'
+```
+
+### 3. Portal Assistant：Backstage 內嵌的開發者對話助理
+
+[Portal Assistant](https://openchoreo.dev/docs/ai/portal-assistant/) 是直接深植在 Backstage 入口網站介面中的互動對話助理，大幅消除工程師在平台、終端與外部 AI 視窗之間的上下文切換：
+
+* **兩大原生互動入口**：
+  * **Build 頁面自動浮現**：當元件的最新建置失敗時，Portal Assistant 會自動彈出；點擊開啟對話時，上下文已自動鎖定該次失敗的 Build Run 日誌，無須工程師手動複製貼上。
+  * **Logs 頁面即時 Investigate**：每一行應用程式日誌在滑鼠懸停（hover）時，都會出現一個 **「Investigate」** 按鈕。點擊後自動開啟側邊抽屜，將該行錯誤及對應的分散式追蹤傳遞給助理展開對話分析。
+* **端對端身分透傳**：由 Backstage 攜帶登入使用者的個人 JWT 轉發給 MCP Server，嚴格遵循該使用者的 RBAC 權限，AI 絕對無法查閱使用者無權存取的命名空間。
+
+#### 官方啟用配置摘要
+
+```bash
+# 啟用 Control Plane Portal Assistant 與 Backstage 特性旗標
+helm upgrade --install openchoreo-control-plane \
+  oci://cr.openchoreo.dev/openchoreo/helm-charts/openchoreo-control-plane \
+  --namespace openchoreo-control-plane \
+  --reuse-values \
+  --set portalAssistant.enabled=true \
+  --set portalAssistant.llm.modelName=gpt-5.4 \
+  --set backstage.features.assistant.enabled=true
+```
+
+Positive
+: 這三大內建代理人的強大之處在於：它們不是隨意讀寫叢集的黑箱機器人，而是遵循同一套 MCP 協定標準的平台使用者。當你掌握了本課的 MCP 呼叫方式，就等於掌握了這套 AI-Native 內部開發者平台的核心技術基礎。
 
 Negative
-: 這三個功能**本課沒有安裝或測試**。想嘗試請參考官方 `docs/ai/` 下的對應頁面。
+: 啟用上述內建代理人需要配置真實的外部 LLM API Key（目前官方原生綁定 OpenAI API）、OpenCost 成本模組，以及足夠的本機記憶體支援額外的 Agent Pod。本課實驗環境未預先部署這三個功能，正式生產環境可依上述 Helm 步驟開啟。
 
 ## 清理
 Duration: 1
